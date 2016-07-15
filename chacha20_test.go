@@ -4,9 +4,7 @@
 
 package chacha20
 
-import (
-	"testing"
-)
+import "testing"
 
 func BenchmarkCipher64B(b *testing.B) {
 	var (

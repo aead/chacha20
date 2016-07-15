@@ -11,7 +11,6 @@ import (
 
 	"github.com/aead/chacha20/chacha"
 	"github.com/aead/poly1305"
-	"github.com/enceve/crypto"
 )
 
 // TagSize is the max. size of the auth. tag for the ChaCha20Poly1305 AEAD in bytes.
@@ -104,7 +103,7 @@ func (c *aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, erro
 	var tag [poly1305.TagSize]byte
 	authenticate(&tag, ciphertext, additionalData, &polyKey)
 	if subtle.ConstantTimeCompare(tag[:c.tagsize], hash[:c.tagsize]) != 1 {
-		return nil, crypto.AuthenticationError{}
+		return nil, errAuthFailed
 	}
 
 	// decrypt ciphertext
