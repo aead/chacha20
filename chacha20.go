@@ -9,7 +9,7 @@
 // iteration. Following ChaCha20 can en/decrypt up to 2^32 * 64 byte
 // for one key-nonce combination. Notice that one specific key-nonce
 // combination must be unique for all time.
-package chacha20
+package chacha20 // import "github.com/aead/chacha20"
 
 import (
 	"crypto/cipher"

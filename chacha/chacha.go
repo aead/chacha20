@@ -2,10 +2,9 @@
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
-
 // Package chacha implements some low level functions of the
 // ChaCha cipher family.
-package chacha
+package chacha // import "github.com/aead/chacha20/chacha"
 
 var constants = [16]byte{
 	0x65, 0x78, 0x70, 0x61,

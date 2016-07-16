@@ -203,11 +203,11 @@ TEXT ·Core(SB),4,$0-24
 
 TEXT ·XORBlocks(SB),4,$0-64
 	MOVQ state+48(FP), AX
-	MOVQ dst+0(FP), BX
-	MOVQ src+24(FP), CX
-	MOVQ src+32(FP), DX
+	MOVQ dst_base+0(FP), BX
+	MOVQ src_base+24(FP), CX
+	MOVQ src_len+32(FP), DX
 	MOVQ rounds+56(FP), DI
-	CMPQ dst+8(FP), DX
+	CMPQ dst_len+8(FP), DX
 	JB DONE
 	
 	MOVQ SP, SI
