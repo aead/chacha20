@@ -6,11 +6,9 @@
 
 package chacha
 
-import (
-	"unsafe"
+import "unsafe"
 
-	"github.com/enceve/crypto"
-)
+const wordSize = int(unsafe.Sizeof(uintptr(0)))
 
 // XORKeyStream crypts bytes from src to dst using the given key, nonce and counter.
 // The rounds argument specifies the number of rounds (must be even) performed for
@@ -42,14 +40,14 @@ func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint3
 	statePtr[7] = *(*uint64)(unsafe.Pointer(&nonce[4]))
 
 	if length >= 64 {
-		XORBlocks(dst, src, &state, rounds)
+		xorBlocks(dst, src, &state, rounds)
 	}
 
 	if n := length & (^(64 - 1)); length-n > 0 {
 		var block [64]byte
 		Core(&block, &state, rounds)
 
-		crypto.XOR(dst[n:], src[n:], block[:])
+		xor(dst[n:], src[n:], block[:])
 	}
 }
 
@@ -79,44 +77,39 @@ func NewCipher(nonce *[12]byte, key *[32]byte, rounds int) *Cipher {
 	return c
 }
 
-// XORKeyStream crypts bytes from src to dst. Src and dst may be the same slice
-// but otherwise should not overlap. If len(dst) < len(src) the function panics.
-func (c *Cipher) XORKeyStream(dst, src []byte) {
-	length := len(src)
-	if len(dst) < length {
-		panic("chacha20/chacha: dst buffer is to small")
-	}
-
-	if c.off > 0 {
-		n := crypto.XOR(dst, src, c.block[c.off:])
-		if n == length {
-			c.off += n
-			return
-		}
-		src = src[n:]
-		dst = dst[n:]
-		length -= n
-		c.off = 0
-	}
-
-	if length >= 64 {
-		XORBlocks(dst, src, &(c.state), c.rounds)
-	}
-
-	if n := length & (^(64 - 1)); length-n > 0 {
-		Core(&(c.block), &(c.state), c.rounds)
-
-		c.off += crypto.XOR(dst[n:], src[n:], c.block[:])
-	}
-}
-
-// XORBlocks crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
+// xorBlocks crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
 // dst using the state. Src and dst may be the same slice but otherwise should not
 // overlap. This function increments the counter of state.
 // If len(src) > len(dst), XORBlocks does nothing.
-func XORBlocks(dst, src []byte, state *[64]byte, rounds int)
+func xorBlocks(dst, src []byte, state *[64]byte, rounds int)
 
 // Core generates 64 byte keystream from the given state performing 'rounds' rounds
 // and writes them to dst. This function expects valid values. (no nil ptr etc.)
 // Core increments the counter of state.
 func Core(dst *[64]byte, state *[64]byte, rounds int)
+
+// xor xors the bytes in src and with and writes the result to dst.
+// The destination is assumed to have enough space. Returns the
+// number of bytes xor'd.
+func xor(dst, src, with []byte) int {
+	n := len(src)
+	if len(with) < n {
+		n = len(with)
+	}
+
+	w := n / wordSize
+	if w > 0 {
+		dstPtr := *(*[]uintptr)(unsafe.Pointer(&dst))
+		srcPtr := *(*[]uintptr)(unsafe.Pointer(&src))
+		withPtr := *(*[]uintptr)(unsafe.Pointer(&with))
+		for i, v := range srcPtr[:w] {
+			dstPtr[i] = withPtr[i] ^ v
+		}
+	}
+
+	for i := (n & (^(wordSize - 1))); i < n; i++ {
+		dst[i] = src[i] ^ with[i]
+	}
+
+	return n
+}

@@ -201,7 +201,7 @@ TEXT ·Core(SB),4,$0-24
 	MOVL DI, 48(AX)
 	RET
 
-TEXT ·XORBlocks(SB),4,$0-64
+TEXT ·xorBlocks(SB),4,$0-64
 	MOVQ state+48(FP), AX
 	MOVQ dst_base+0(FP), BX
 	MOVQ src_base+24(FP), CX

@@ -31,3 +31,34 @@ func (c *Cipher) SetCounter(ctr uint32) {
 	c.state[51] = byte(ctr >> 24)
 	c.off = 0
 }
+
+// XORKeyStream crypts bytes from src to dst. Src and dst may be the same slice
+// but otherwise should not overlap. If len(dst) < len(src) the function panics.
+func (c *Cipher) XORKeyStream(dst, src []byte) {
+	length := len(src)
+	if len(dst) < length {
+		panic("chacha20/chacha: dst buffer is to small")
+	}
+
+	if c.off > 0 {
+		n := xor(dst, src, c.block[c.off:])
+		if n == length {
+			c.off += n
+			return
+		}
+		src = src[n:]
+		dst = dst[n:]
+		length -= n
+		c.off = 0
+	}
+
+	if length >= 64 {
+		xorBlocks(dst, src, &(c.state), c.rounds)
+	}
+
+	if n := length & (^(64 - 1)); length-n > 0 {
+		Core(&(c.block), &(c.state), c.rounds)
+
+		c.off += xor(dst[n:], src[n:], c.block[:])
+	}
+}
