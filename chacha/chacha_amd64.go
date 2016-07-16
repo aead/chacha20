@@ -81,6 +81,7 @@ func NewCipher(nonce *[12]byte, key *[32]byte, rounds int) *Cipher {
 // dst using the state. Src and dst may be the same slice but otherwise should not
 // overlap. This function increments the counter of state.
 // If len(src) > len(dst), XORBlocks does nothing.
+//go:noescape
 func xorBlocks(dst, src []byte, state *[64]byte, rounds int)
 
 // Core generates 64 byte keystream from the given state performing 'rounds' rounds
