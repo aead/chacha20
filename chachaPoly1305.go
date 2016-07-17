@@ -57,9 +57,7 @@ func (c *aead) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	if n := len(nonce); n != NonceSize {
 		panic("chacha20: " + errInvalidNonceSize.Error())
 	}
-	if len(dst) < len(plaintext)+c.tagsize {
-		panic("chacha20: " + errDstToSmall.Error())
-	}
+	dst, out := sliceForAppend(dst, len(plaintext)+c.tagsize)
 
 	var Nonce [12]byte
 	copy(Nonce[:], nonce)
@@ -70,12 +68,14 @@ func (c *aead) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 
 	// encrypt the plaintext
 	n := len(plaintext)
-	chacha.XORKeyStream(dst, plaintext, &Nonce, &(c.key), 1, 20)
+	chacha.XORKeyStream(out, plaintext, &Nonce, &(c.key), 1, 20)
 
 	// authenticate the ciphertext
 	var tag [poly1305.TagSize]byte
 	authenticate(&tag, dst[:n], additionalData, &polyKey)
-	return append(dst[:n], tag[:c.tagsize]...)
+	dst = append(dst[:n], tag[:c.tagsize]...)
+
+	return dst
 }
 
 func (c *aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
@@ -85,15 +85,13 @@ func (c *aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, erro
 	if len(ciphertext) < c.tagsize {
 		return nil, errAuthFailed
 	}
-	if len(dst) < len(ciphertext)-c.tagsize {
-		return nil, errDstToSmall
-	}
+	dst, out := sliceForAppend(dst, len(ciphertext)-c.tagsize)
 
 	var Nonce [12]byte
 	copy(Nonce[:], nonce)
 
 	hash := ciphertext[len(ciphertext)-c.tagsize:]
-	ciphertext = ciphertext[:len(ciphertext)-c.tagsize]
+	ctext := ciphertext[:len(ciphertext)-c.tagsize]
 
 	// create the poly1305 key
 	var polyKey [32]byte
@@ -101,14 +99,15 @@ func (c *aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, erro
 
 	// authenticate the ciphertext
 	var tag [poly1305.TagSize]byte
-	authenticate(&tag, ciphertext, additionalData, &polyKey)
+	authenticate(&tag, ctext, additionalData, &polyKey)
 	if subtle.ConstantTimeCompare(tag[:c.tagsize], hash[:c.tagsize]) != 1 {
 		return nil, errAuthFailed
 	}
 
 	// decrypt ciphertext
-	chacha.XORKeyStream(dst, ciphertext, &Nonce, &(c.key), 1, 20)
-	return dst[:len(ciphertext)], nil
+	chacha.XORKeyStream(out, ctext, &Nonce, &(c.key), 1, 20)
+
+	return dst, nil
 }
 
 // authenticate calculates the poly1305 tag from
@@ -147,4 +146,19 @@ func authenticate(out *[TagSize]byte, ciphertext, additionalData []byte, key *[3
 	}
 	poly.Write(buf[:])
 	poly.Sum(out)
+}
+
+// sliceForAppend takes a slice and a requested number of bytes. It returns a
+// slice with the contents of the given slice followed by that many bytes and a
+// second slice that aliases into it and contains only the extra bytes. If the
+// original slice has sufficient capacity then no allocation is performed.
+func sliceForAppend(in []byte, n int) (head, tail []byte) {
+	if total := len(in) + n; cap(in) >= total {
+		head = in[:total]
+	} else {
+		head = make([]byte, total)
+		copy(head, in)
+	}
+	tail = head[len(in):]
+	return
 }

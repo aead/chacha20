@@ -62,12 +62,10 @@ func TestSeal(t *testing.T) {
 
 	mustFail := func(msg string, dst, nonce, src []byte) {
 		defer recFunc(t, msg)
-		c.Seal(dst, nonce, src, nil)
+		c.Seal(dst[:0], nonce, src, nil)
 	}
 
 	mustFail("nonce size is invalid", dst[:], nonce[:NonceSize-1], src[:])
-
-	mustFail("dst length invalid", dst[:len(dst)-2], nonce[:], src[:])
 }
 
 func TestOpen(t *testing.T) {
@@ -110,6 +108,8 @@ func TestOpen(t *testing.T) {
 	}
 }
 
+// Benchmarks
+
 func BenchmarkSeal64B(b *testing.B) {
 	var key [32]byte
 	var nonce [12]byte
@@ -120,8 +120,9 @@ func BenchmarkSeal64B(b *testing.B) {
 	data := make([]byte, 32)
 
 	b.SetBytes(int64(len(msg)))
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		dst = c.Seal(dst, nonce[:], msg, data)
+		dst = c.Seal(dst[:0], nonce[:], msg, data)
 	}
 }
 
@@ -135,8 +136,9 @@ func BenchmarkSeal1K(b *testing.B) {
 	data := make([]byte, 32)
 
 	b.SetBytes(int64(len(msg)))
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		dst = c.Seal(dst, nonce[:], msg, data)
+		dst = c.Seal(dst[:0], nonce[:], msg, data)
 	}
 }
 
@@ -150,8 +152,9 @@ func BenchmarkSeal64K(b *testing.B) {
 	data := make([]byte, 32)
 
 	b.SetBytes(int64(len(msg)))
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		dst = c.Seal(dst, nonce[:], msg, data)
+		dst = c.Seal(dst[:0], nonce[:], msg, data)
 	}
 }
 
@@ -162,13 +165,14 @@ func BenchmarkOpen64B(b *testing.B) {
 
 	msg := make([]byte, 64)
 	dst := make([]byte, len(msg))
-	ciphertext := make([]byte, len(msg)+TagSize)
+	ciphertext := make([]byte, len(msg))
 	data := make([]byte, 32)
 	ciphertext = c.Seal(ciphertext, nonce[:], msg, data)
 
-	b.SetBytes(int64(len(msg)))
+	b.SetBytes(int64(len(ciphertext)))
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		dst, _ = c.Open(dst, nonce[:], ciphertext, data)
+		dst, _ = c.Open(dst[:0], nonce[:], ciphertext, data)
 	}
 }
 
@@ -183,9 +187,10 @@ func BenchmarkOpen1K(b *testing.B) {
 	data := make([]byte, 32)
 	ciphertext = c.Seal(ciphertext, nonce[:], msg, data)
 
-	b.SetBytes(int64(len(msg)))
+	b.SetBytes(int64(len(ciphertext)))
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		dst, _ = c.Open(dst, nonce[:], ciphertext, data)
+		dst, _ = c.Open(dst[:0], nonce[:], ciphertext, data)
 	}
 }
 
@@ -200,8 +205,9 @@ func BenchmarkOpen64K(b *testing.B) {
 	data := make([]byte, 32)
 	ciphertext = c.Seal(ciphertext, nonce[:], msg, data)
 
-	b.SetBytes(int64(len(msg)))
+	b.SetBytes(int64(len(ciphertext)))
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		dst, _ = c.Open(dst, nonce[:], ciphertext, data)
+		dst, _ = c.Open(dst[:0], nonce[:], ciphertext, data)
 	}
 }

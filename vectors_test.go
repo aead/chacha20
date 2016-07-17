@@ -209,13 +209,13 @@ func TestAEADVectors(t *testing.T) {
 		}
 
 		buf := make([]byte, len(ciphertext))
-		c.Seal(buf, nonce, msg, data)
+		c.Seal(buf[:0], nonce, msg, data)
 
 		if !bytes.Equal(buf, ciphertext) {
 			t.Fatalf("TestVector %d Seal failed:\nFound   : %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(ciphertext))
 		}
 
-		buf, err = c.Open(buf, nonce, buf, data)
+		buf, err = c.Open(buf[:0], nonce, buf, data)
 
 		if err != nil {
 			t.Fatalf("TestVector %d: Open failed - Cause: %s", i, err)

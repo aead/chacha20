@@ -201,6 +201,7 @@ TEXT ·Core(SB),4,$0-24
 	MOVL DI, 48(AX)
 	RET
 
+// func xorBlocks(dst, src []byte, state *[64]byte, rounds int)
 TEXT ·xorBlocks(SB),4,$0-64
 	MOVQ state+48(FP), AX
 	MOVQ dst_base+0(FP), BX

@@ -14,6 +14,7 @@ func BenchmarkCipher64B(b *testing.B) {
 	c := NewCipher(&nonce, &key)
 	buf := make([]byte, 64)
 	b.SetBytes(64)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		c.XORKeyStream(buf, buf)
 	}
@@ -27,6 +28,7 @@ func BenchmarkCipher1K(b *testing.B) {
 	c := NewCipher(&nonce, &key)
 	buf := make([]byte, 1024)
 	b.SetBytes(1024)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		c.XORKeyStream(buf, buf)
 	}
@@ -40,6 +42,7 @@ func BenchmarkCipher64K(b *testing.B) {
 	c := NewCipher(&nonce, &key)
 	buf := make([]byte, 64*1024)
 	b.SetBytes(64 * 1024)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		c.XORKeyStream(buf, buf)
 	}
@@ -52,6 +55,7 @@ func BenchmarkXORKeyStream64B(b *testing.B) {
 	)
 	buf := make([]byte, 64)
 	b.SetBytes(64)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		XORKeyStream(buf, buf, &nonce, &key, 0)
 	}
@@ -64,6 +68,7 @@ func BenchmarkXORKeyStream1K(b *testing.B) {
 	)
 	buf := make([]byte, 1024)
 	b.SetBytes(1024)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		XORKeyStream(buf, buf, &nonce, &key, 0)
 	}
@@ -76,6 +81,7 @@ func BenchmarkXORKeyStream64K(b *testing.B) {
 	)
 	buf := make([]byte, 64*1024)
 	b.SetBytes(64 * 1024)
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		XORKeyStream(buf, buf, &nonce, &key, 0)
 	}
