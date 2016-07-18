@@ -17,7 +17,6 @@ import (
 const TagSize = poly1305.TagSize
 
 var (
-	errDstToSmall       = errors.New("dst buffer to small")
 	errAuthFailed       = errors.New("authentication failed")
 	errInvalidNonceSize = errors.New("nonce size is invalid")
 )
