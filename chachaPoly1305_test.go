@@ -110,104 +110,44 @@ func TestOpen(t *testing.T) {
 
 // Benchmarks
 
-func BenchmarkSeal64B(b *testing.B) {
+func benchmarkSeal(b *testing.B, size int) {
 	var key [32]byte
 	var nonce [12]byte
 	c := NewChaCha20Poly1305(&key)
 
-	msg := make([]byte, 64)
+	msg := make([]byte, size)
 	dst := make([]byte, len(msg)+TagSize)
 	data := make([]byte, 32)
 
-	b.SetBytes(int64(len(msg)))
+	b.SetBytes(int64(size))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		dst = c.Seal(dst[:0], nonce[:], msg, data)
 	}
 }
 
-func BenchmarkSeal1K(b *testing.B) {
+func benchmarkOpen(b *testing.B, size int) {
 	var key [32]byte
 	var nonce [12]byte
 	c := NewChaCha20Poly1305(&key)
 
-	msg := make([]byte, 1024)
-	dst := make([]byte, len(msg)+TagSize)
+	msg := make([]byte, size)
+	dst := make([]byte, size)
+	ciphertext := make([]byte, size+TagSize)
 	data := make([]byte, 32)
+	ciphertext = c.Seal(ciphertext[:0], nonce[:], msg, data)
 
-	b.SetBytes(int64(len(msg)))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dst = c.Seal(dst[:0], nonce[:], msg, data)
-	}
-}
-
-func BenchmarkSeal64K(b *testing.B) {
-	var key [32]byte
-	var nonce [12]byte
-	c := NewChaCha20Poly1305(&key)
-
-	msg := make([]byte, 64*1024)
-	dst := make([]byte, len(msg)+TagSize)
-	data := make([]byte, 32)
-
-	b.SetBytes(int64(len(msg)))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dst = c.Seal(dst[:0], nonce[:], msg, data)
-	}
-}
-
-func BenchmarkOpen64B(b *testing.B) {
-	var key [32]byte
-	var nonce [12]byte
-	c := NewChaCha20Poly1305(&key)
-
-	msg := make([]byte, 64)
-	dst := make([]byte, len(msg))
-	ciphertext := make([]byte, len(msg))
-	data := make([]byte, 32)
-	ciphertext = c.Seal(ciphertext, nonce[:], msg, data)
-
-	b.SetBytes(int64(len(ciphertext)))
+	b.SetBytes(int64(size))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		dst, _ = c.Open(dst[:0], nonce[:], ciphertext, data)
 	}
 }
 
-func BenchmarkOpen1K(b *testing.B) {
-	var key [32]byte
-	var nonce [12]byte
-	c := NewChaCha20Poly1305(&key)
+func BenchmarkSeal64B(b *testing.B) { benchmarkSeal(b, 64) }
+func BenchmarkSeal1K(b *testing.B)  { benchmarkSeal(b, 1024) }
+func BenchmarkSeal64K(b *testing.B) { benchmarkSeal(b, 64*1024) }
 
-	msg := make([]byte, 1024)
-	dst := make([]byte, len(msg))
-	ciphertext := make([]byte, len(msg)+TagSize)
-	data := make([]byte, 32)
-	ciphertext = c.Seal(ciphertext, nonce[:], msg, data)
-
-	b.SetBytes(int64(len(ciphertext)))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dst, _ = c.Open(dst[:0], nonce[:], ciphertext, data)
-	}
-}
-
-func BenchmarkOpen64K(b *testing.B) {
-	var key [32]byte
-	var nonce [12]byte
-	c := NewChaCha20Poly1305(&key)
-
-	msg := make([]byte, 64*1024)
-	dst := make([]byte, len(msg))
-	ciphertext := make([]byte, len(msg)+TagSize)
-	data := make([]byte, 32)
-	ciphertext = c.Seal(ciphertext, nonce[:], msg, data)
-
-	b.SetBytes(int64(len(ciphertext)))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dst, _ = c.Open(dst[:0], nonce[:], ciphertext, data)
-	}
-}
+func BenchmarkOpen64B(b *testing.B) { benchmarkOpen(b, 64) }
+func BenchmarkOpen1K(b *testing.B)  { benchmarkOpen(b, 1024) }
+func BenchmarkOpen64K(b *testing.B) { benchmarkOpen(b, 64*1024) }

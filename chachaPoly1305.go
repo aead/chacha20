@@ -57,25 +57,24 @@ func (c *aead) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	if n := len(nonce); n != NonceSize {
 		panic("chacha20: " + errInvalidNonceSize.Error())
 	}
-	dst, out := sliceForAppend(dst, len(plaintext)+c.tagsize)
-
-	var Nonce [12]byte
-	copy(Nonce[:], nonce)
 
 	// create the poly1305 key
+	var Nonce [12]byte
+	copy(Nonce[:], nonce)
 	var polyKey [32]byte
 	chacha.XORKeyStream(polyKey[:], polyKey[:], &Nonce, &(c.key), 0, 20)
 
 	// encrypt the plaintext
 	n := len(plaintext)
-	chacha.XORKeyStream(out, plaintext, &Nonce, &(c.key), 1, 20)
+	ret, ciphertext := sliceForAppend(dst, n+c.tagsize)
+	chacha.XORKeyStream(ciphertext, plaintext, &Nonce, &(c.key), 1, 20)
 
 	// authenticate the ciphertext
 	var tag [poly1305.TagSize]byte
-	authenticate(&tag, dst[:n], additionalData, &polyKey)
-	dst = append(dst[:n], tag[:c.tagsize]...)
+	authenticate(&tag, ciphertext[:n], additionalData, &polyKey)
+	copy(ciphertext[n:], tag[:c.tagsize])
 
-	return dst
+	return ret
 }
 
 func (c *aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
@@ -85,29 +84,27 @@ func (c *aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, erro
 	if len(ciphertext) < c.tagsize {
 		return nil, errAuthFailed
 	}
-	dst, out := sliceForAppend(dst, len(ciphertext)-c.tagsize)
-
-	var Nonce [12]byte
-	copy(Nonce[:], nonce)
-
-	hash := ciphertext[len(ciphertext)-c.tagsize:]
-	ctext := ciphertext[:len(ciphertext)-c.tagsize]
 
 	// create the poly1305 key
+	var Nonce [12]byte
+	copy(Nonce[:], nonce)
 	var polyKey [32]byte
 	chacha.XORKeyStream(polyKey[:], polyKey[:], &Nonce, &(c.key), 0, 20)
 
 	// authenticate the ciphertext
+	n := len(ciphertext) - c.tagsize
 	var tag [poly1305.TagSize]byte
-	authenticate(&tag, ctext, additionalData, &polyKey)
-	if subtle.ConstantTimeCompare(tag[:c.tagsize], hash[:c.tagsize]) != 1 {
+	authenticate(&tag, ciphertext[:n], additionalData, &polyKey)
+	sum := ciphertext[n:]
+	if subtle.ConstantTimeCompare(tag[:c.tagsize], sum[:c.tagsize]) != 1 {
 		return nil, errAuthFailed
 	}
 
 	// decrypt ciphertext
-	chacha.XORKeyStream(out, ctext, &Nonce, &(c.key), 1, 20)
+	ret, plaintext := sliceForAppend(dst, n)
+	chacha.XORKeyStream(plaintext, ciphertext[:n], &Nonce, &(c.key), 1, 20)
 
-	return dst, nil
+	return ret, nil
 }
 
 // authenticate calculates the poly1305 tag from
