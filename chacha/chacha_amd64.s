@@ -75,53 +75,53 @@
 	PSHUFL $57, v7, v7
 
 #define HALF_ROUND_256B(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, t0) \
-	PADDL v1, v0; \ 
+	PADDL v1, v0; \
 	PADDL v5, v4; \
-	PADDL v9, v8; \ 
-	PADDL v13, v12; \ 
-	PXOR v0, v3; \ 
-	PXOR v4, v7; \ 
-	PXOR v8, v11; \ 
-	PXOR v12, v15; \ 
-	MOVO v12, t0; \ 
+	PADDL v9, v8; \
+	PADDL v13, v12; \
+	PXOR v0, v3; \
+	PXOR v4, v7; \
+	PXOR v8, v11; \
+	PXOR v12, v15; \
+	MOVO v12, t0; \
 	ROTL32(16, v3, v12); \
 	ROTL32(16, v7, v12); \
 	ROTL32(16, v11, v12); \
 	ROTL32(16, v15, v12); \
-	PADDL v3, v2; \ 
-	PADDL v7, v6; \ 
-	PADDL v11, v10; \ 
-	PADDL v15, v14; \ 
-	PXOR v2, v1; \ 
-	PXOR v6, v5; \ 
-	PXOR v10, v9; \ 
-	PXOR v14, v13; \ 
+	PADDL v3, v2; \
+	PADDL v7, v6; \
+	PADDL v11, v10; \
+	PADDL v15, v14; \
+	PXOR v2, v1; \
+	PXOR v6, v5; \
+	PXOR v10, v9; \
+	PXOR v14, v13; \
 	ROTL32(12, v1, v12); \
 	ROTL32(12, v5, v12); \
 	ROTL32(12, v9, v12); \
 	ROTL32(12, v13, v12); \
-	MOVO t0, v12; \ 
-	PADDL v1, v0; \ 
-	PADDL v5, v4; \ 
-	PADDL v9, v8; \ 
-	PADDL v13, v12; \ 
-	PXOR v0, v3; \ 
-	PXOR v4, v7; \ 
-	PXOR v8, v11; \ 
-	PXOR v12, v15; \ 
-	MOVO v12, 16(SP); \ 
+	MOVO t0, v12; \
+	PADDL v1, v0; \
+	PADDL v5, v4; \
+	PADDL v9, v8; \
+	PADDL v13, v12; \
+	PXOR v0, v3; \
+	PXOR v4, v7; \
+	PXOR v8, v11; \
+	PXOR v12, v15; \
+	MOVO v12, 16(SP); \
 	ROTL32(8, v3, v12); \
 	ROTL32(8, v7, v12); \
 	ROTL32(8, v11, v12); \
 	ROTL32(8, v15, v12); \
-	PADDL v3, v2; \ 
-	PADDL v7, v6; \ 
-	PADDL v11, v10; \ 
-	PADDL v15, v14; \ 
-	PXOR v2, v1; \ 
-	PXOR v6, v5; \ 
-	PXOR v10, v9; \ 
-	PXOR v14, v13; \ 
+	PADDL v3, v2; \
+	PADDL v7, v6; \
+	PADDL v11, v10; \
+	PADDL v15, v14; \
+	PXOR v2, v1; \
+	PXOR v6, v5; \
+	PXOR v10, v9; \
+	PXOR v14, v13; \
 	ROTL32(7, v1, v12); \
 	ROTL32(7, v5, v12); \
 	ROTL32(7, v9, v12); \
@@ -129,32 +129,32 @@
 	
 #define ROUND_256B(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, t0) \
 	HALF_ROUND_256B(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, t0); \
-	PSHUFL $57, v1, v1; \ 
-	PSHUFL $57, v5, v5; \ 
-	PSHUFL $57, v9, v9; \ 
-	PSHUFL $57, v13, v13; \ 
-	PSHUFL $78, v2, v2; \ 
-	PSHUFL $78, v6, v6; \ 
-	PSHUFL $78, v10, v10; \ 
-	PSHUFL $78, v14, v14; \ 
-	PSHUFL $147, v3, v3; \ 
-	PSHUFL $147, v7, v7; \ 
-	PSHUFL $147, v11, v11; \ 
-	PSHUFL $147, v15, v15; \ 
-	MOVO t0, v12; \ 
+	PSHUFL $57, v1, v1; \
+	PSHUFL $57, v5, v5; \
+	PSHUFL $57, v9, v9; \
+	PSHUFL $57, v13, v13; \
+	PSHUFL $78, v2, v2; \
+	PSHUFL $78, v6, v6; \
+	PSHUFL $78, v10, v10; \
+	PSHUFL $78, v14, v14; \
+	PSHUFL $147, v3, v3; \
+	PSHUFL $147, v7, v7; \
+	PSHUFL $147, v11, v11; \
+	PSHUFL $147, v15, v15; \
+	MOVO t0, v12; \
 	HALF_ROUND_256B(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, t0); \
-	PSHUFL $147, v1, v1; \ 
-	PSHUFL $147, v5, v5; \ 
-	PSHUFL $147, v9, v9; \ 
-	PSHUFL $147, v13, v13; \ 
-	PSHUFL $78, v2, v2; \ 
-	PSHUFL $78, v6, v6; \ 
-	PSHUFL $78, v10, v10; \ 
-	PSHUFL $78, v14, v14; \ 
-	PSHUFL $57, v3, v3; \ 
-	PSHUFL $57, v7, v7; \ 
-	PSHUFL $57, v11, v11; \ 
-	PSHUFL $57, v15, v15; \ 
+	PSHUFL $147, v1, v1; \
+	PSHUFL $147, v5, v5; \
+	PSHUFL $147, v9, v9; \
+	PSHUFL $147, v13, v13; \
+	PSHUFL $78, v2, v2; \
+	PSHUFL $78, v6, v6; \
+	PSHUFL $78, v10, v10; \
+	PSHUFL $78, v14, v14; \
+	PSHUFL $57, v3, v3; \
+	PSHUFL $57, v7, v7; \
+	PSHUFL $57, v11, v11; \
+	PSHUFL $57, v15, v15; \
 	MOVO t0, v12
 	
 #define XOR_64B(dst, src, off, v0 , v1 , v2 , v3 , t0) \
@@ -274,7 +274,7 @@ TEXT ·xorBlocks(SB),4,$0-64
 	PADDL 16(AX), X13
 	PADDL 32(AX), X14
 	PADDL X3, X15		
-	XOR_64B(BX, CX, 192, X12, X13, X14, X15, X0)		
+	XOR_64B(BX, CX, 192, X12, X13, X14, X15, X0)
 	PADDQ 0(SP), X3
 	MOVO X3, 48(AX)
 	ADDQ $256, CX
@@ -342,7 +342,7 @@ TEXT ·xorBlocks(SB),4,$0-64
 	PADDL X1, X5
 	PADDL X2, X6
 	PADDL X3, X7
-	XOR_64B(BX, CX, 0, X4, X5, X6, X7, X8)	
+	XOR_64B(BX, CX, 0, X4, X5, X6, X7, X8)
 	PADDQ X15, X3
 	MOVO X3, 48(AX)
 	DONE:

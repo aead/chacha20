@@ -6,83 +6,35 @@ package chacha20
 
 import "testing"
 
-func BenchmarkCipher64B(b *testing.B) {
+func benchmarkCipher(b *testing.B, size int) {
 	var (
 		key   [32]byte
 		nonce [NonceSize]byte
 	)
 	c := NewCipher(&nonce, &key)
-	buf := make([]byte, 64)
-	b.SetBytes(64)
+	buf := make([]byte, size)
+
+	b.SetBytes(int64(len(buf)))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		c.XORKeyStream(buf, buf)
 	}
 }
 
-func BenchmarkCipher1K(b *testing.B) {
+func benchmarkXORKeyStream(b *testing.B, size int) {
 	var (
 		key   [32]byte
 		nonce [NonceSize]byte
 	)
-	c := NewCipher(&nonce, &key)
-	buf := make([]byte, 1024)
-	b.SetBytes(1024)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		c.XORKeyStream(buf, buf)
-	}
-}
-
-func BenchmarkCipher64K(b *testing.B) {
-	var (
-		key   [32]byte
-		nonce [NonceSize]byte
-	)
-	c := NewCipher(&nonce, &key)
-	buf := make([]byte, 64*1024)
-	b.SetBytes(64 * 1024)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		c.XORKeyStream(buf, buf)
-	}
-}
-
-func BenchmarkXORKeyStream64B(b *testing.B) {
-	var (
-		key   [32]byte
-		nonce [NonceSize]byte
-	)
-	buf := make([]byte, 64)
-	b.SetBytes(64)
+	buf := make([]byte, size)
+	b.SetBytes(int64(len(buf)))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		XORKeyStream(buf, buf, &nonce, &key, 0)
 	}
 }
 
-func BenchmarkXORKeyStream1K(b *testing.B) {
-	var (
-		key   [32]byte
-		nonce [NonceSize]byte
-	)
-	buf := make([]byte, 1024)
-	b.SetBytes(1024)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		XORKeyStream(buf, buf, &nonce, &key, 0)
-	}
-}
-
-func BenchmarkXORKeyStream64K(b *testing.B) {
-	var (
-		key   [32]byte
-		nonce [NonceSize]byte
-	)
-	buf := make([]byte, 64*1024)
-	b.SetBytes(64 * 1024)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		XORKeyStream(buf, buf, &nonce, &key, 0)
-	}
-}
+func BenchmarkCipher64(b *testing.B)        { benchmarkCipher(b, 64) }
+func BenchmarkCipher16K(b *testing.B)       { benchmarkCipher(b, 16*1024) }
+func BenchmarkXORKeyStream64(b *testing.B)  { benchmarkXORKeyStream(b, 64) }
+func BenchmarkXORKeyStream16K(b *testing.B) { benchmarkXORKeyStream(b, 16*1024) }
