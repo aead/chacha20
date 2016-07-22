@@ -2,6 +2,20 @@
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
+// +build amd64, !gccgo, !appengine
+
+#include "textflag.h"
+
+DATA constants<>+0x00(SB)/4, $0x61707865
+DATA constants<>+0x04(SB)/4, $0x3320646e
+DATA constants<>+0x08(SB)/4, $0x79622d32
+DATA constants<>+0x0c(SB)/4, $0x6b206574
+GLOBL constants<>(SB), (NOPTR+RODATA), $16
+
+DATA one<>+0x00(SB)/8, $1
+DATA one<>+0x08(SB)/8, $0
+GLOBL one<>(SB), (NOPTR+RODATA), $16
+
 #define ROTL32(n, v , t) \
  	MOVO v, t; \
 	PSLLL $n, t; \
@@ -109,7 +123,7 @@
 	PXOR v4, v7; \
 	PXOR v8, v11; \
 	PXOR v12, v15; \
-	MOVO v12, 16(SP); \
+	MOVO v12, t0; \
 	ROTL32(8, v3, v12); \
 	ROTL32(8, v7, v12); \
 	ROTL32(8, v11, v12); \
@@ -176,7 +190,6 @@ TEXT ·Core(SB),4,$0-24
 	MOVQ state+8(FP), AX
 	MOVQ dst+0(FP), BX
 	MOVQ rounds+16(FP), CX
-	MOVL 48(AX), DI
 	MOVO 0(AX), X0
 	MOVO 16(AX), X1
 	MOVO 32(AX), X2
@@ -189,16 +202,16 @@ TEXT ·Core(SB),4,$0-24
 		ROUND_64B(X4, X5, X6, X7, X8)
 		SUBQ $2, CX
 		JA loop
-	PADDL X4, X0
-	PADDL X5, X1
-	PADDL X6, X2
-	PADDL X7, X3
-	MOVO X0, 0(BX)
-	MOVO X1, 16(BX)
-	MOVO X2, 32(BX)
-	MOVO X3, 48(BX)
-	ADDL $1, DI
-	MOVL DI, 48(AX)
+	PADDL X0, X4
+	PADDL X1, X5
+	PADDL X2, X6
+	PADDL X3, X7
+	MOVO X4, 0(BX)
+	MOVO X5, 16(BX)
+	MOVO X6, 32(BX)
+	MOVO X7, 48(BX)
+	PADDQ one<>(SB), X3
+	MOVO X3, 48(AX)
 	RET
 
 // func xorBlocks(dst, src []byte, state *[64]byte, rounds int)
@@ -212,15 +225,8 @@ TEXT ·xorBlocks(SB),4,$0-64
 	JB DONE
 	
 	MOVQ SP, SI
-	MOVQ $31, BP
-	NOTQ BP
-	ANDQ BP, SP
-	SUBQ $32, SP
-	PXOR X0, X0
-	SUBQ $32, SP
-	MOVO X0, 0(SP)
-	MOVL $1, BP
-	MOVL BP, 0(SP)
+	ANDQ $0XFFFFFFFFFFFFFFF0, SP
+	SUBQ $16, SP
 	
 	CMPQ DX, $256
 	JB BYTES_BETWEEN_0_AND_255
@@ -233,49 +239,49 @@ TEXT ·xorBlocks(SB),4,$0-64
 	MOVO X1, X5
 	MOVO X2, X6
 	MOVO X3, X7
-	PADDQ 0(SP), X7
+	PADDQ one<>(SB), X7
 	MOVO X0, X8
 	MOVO X1, X9
 	MOVO X2, X10
 	MOVO X7, X11
-	PADDQ 0(SP), X11
+	PADDQ one<>(SB), X11
 	MOVO X0, X12
 	MOVO X1, X13
 	MOVO X2, X14
 	MOVO X11, X15
-	PADDQ 0(SP), X15
+	PADDQ one<>(SB), X15
 	MOVQ DI, BP
 	CHACHA_LOOP_256:
-		ROUND_256B(X0, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, 16(SP))
+		ROUND_256B(X0, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, 0(SP))
 		SUBQ $2, BP
 		JA CHACHA_LOOP_256
-	MOVO X12, 16(SP)
+	MOVO X12, 0(SP)
 	PADDL 0(AX), X0
 	PADDL 16(AX), X1
 	PADDL 32(AX), X2
 	PADDL 48(AX), X3
 	XOR_64B(BX, CX, 0, X0, X1, X2, X3, X12)
 	MOVO 48(AX), X3
-	PADDQ 0(SP), X3
+	PADDQ one<>(SB), X3
 	PADDL 0(AX), X4
 	PADDL 16(AX), X5
 	PADDL 32(AX), X6
 	PADDL X3, X7
 	XOR_64B(BX, CX, 64, X4, X5, X6, X7, X12)
-	PADDQ 0(SP), X3
+	PADDQ one<>(SB), X3
 	PADDL 0(AX), X8
 	PADDL 16(AX), X9
 	PADDL 32(AX), X10
 	PADDL X3, X11
 	XOR_64B(BX, CX, 128, X8, X9, X10, X11, X12)
-	PADDQ 0(SP), X3
-	MOVO 16(SP), X12
+	PADDQ one<>(SB), X3
+	MOVO 0(SP), X12
 	PADDL 0(AX), X12
 	PADDL 16(AX), X13
 	PADDL 32(AX), X14
 	PADDL X3, X15		
 	XOR_64B(BX, CX, 192, X12, X13, X14, X15, X0)
-	PADDQ 0(SP), X3
+	PADDQ one<>(SB), X3
 	MOVO X3, 48(AX)
 	ADDQ $256, CX
 	ADDQ $256, BX
@@ -287,7 +293,7 @@ TEXT ·xorBlocks(SB),4,$0-64
 	JE DONE
 	CMPQ DX, $128
 	JB BYTES_BETWEEN_0_AND_127
-	MOVQ 0(SP), X15
+	MOVQ one<>(SB), X15
 	MOVO 0(AX), X0
 	MOVO 16(AX), X1
 	MOVO 32(AX), X2
@@ -324,7 +330,7 @@ TEXT ·xorBlocks(SB),4,$0-64
 	BYTES_BETWEEN_0_AND_127:
 	CMPQ DX, $64
 	JB DONE
-	MOVQ 0(SP), X15
+	MOVQ one<>(SB), X15
 	MOVO 0(AX), X0
 	MOVO 16(AX), X1
 	MOVO 32(AX), X2
@@ -347,37 +353,29 @@ TEXT ·xorBlocks(SB),4,$0-64
 	MOVO X3, 48(AX)
 	DONE:
 	PXOR X0, X0
-	MOVO X0, 16(SP)
+	MOVO X0, 0(SP)
 	MOVQ SI, SP
 	RET
 	
 // func setState(state *[64]byte, key *[32]byte, nonce *[12]byte, counter uint32)
 TEXT ·setState(SB),4,$0-28
-	MOVQ state+0(FP), R12
-	MOVQ key+8(FP), R13
-	MOVQ nonce+16(FP), R14
-	MOVL counter+24(FP), R15
+	MOVQ state+0(FP), AX
+	MOVQ key+8(FP), BX
+	MOVQ nonce+16(FP), CX
+	MOVL counter+24(FP), DX
 	
-	MOVQ $0X61707865, 0(R12)
-	MOVL $0X3320646e, 4(R12)
-	MOVL $0X79622d32, 8(R12)
-	MOVL $0X6b206574, 12(R12)
+	MOVOU constants<>(SB), X0
+	MOVO X0, 0(AX)
 	
-	MOVQ 0(R13), R8
-	MOVQ 8(R13), R9
-	MOVQ 16(R13), R10
-	MOVQ 24(R13), R11
-	MOVQ R8, 16(R12)
-	MOVQ R9, 24(R12)
-	MOVQ R10, 32(R12)
-	MOVQ R11, 40(R12)
+	MOVOU 0(BX), X0
+	MOVO X0, 16(AX)
+	MOVOU 16(BX), X1
+	MOVO X1, 32(AX) 
+
+	MOVL DX, 48(AX)
 	
-	MOVL R15, 48(R12)
-	
-	MOVL 0(R14), R8
-	MOVL 4(R14), R9
-	MOVL 8(R14), R10
-	MOVL R8, 52(R12)
-	MOVL R9, 56(R12)
-	MOVL R10, 60(R12)
+	MOVL 0(CX), R8
+	MOVQ 4(CX), R9
+	MOVL R8, 52(AX)
+	MOVQ R9, 56(AX)
 	RET

@@ -19,6 +19,7 @@ const TagSize = poly1305.TagSize
 var (
 	errAuthFailed       = errors.New("authentication failed")
 	errInvalidNonceSize = errors.New("nonce size is invalid")
+	errInvalidTagSize   = errors.New("tag size must be between 1 and 16")
 )
 
 // NewChaCha20Poly1305 returns a cipher.AEAD implementing the
@@ -38,7 +39,7 @@ func NewChaCha20Poly1305(key *[32]byte) cipher.AEAD {
 // The tagsize must be between 1 and the TagSize constant.
 func NewChaCha20Poly1305WithTagSize(key *[32]byte, tagsize int) (cipher.AEAD, error) {
 	if tagsize < 1 || tagsize > TagSize {
-		return nil, errors.New("tag size must be between 1 and 16")
+		return nil, errInvalidTagSize
 	}
 	var defaultNonce [12]byte
 	c := &aead{
@@ -60,7 +61,7 @@ func (c *aead) NonceSize() int { return NonceSize }
 
 func (c *aead) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	if n := len(nonce); n != NonceSize {
-		panic("chacha20: " + errInvalidNonceSize.Error())
+		panic("chacha20: nonce size is invalid")
 	}
 
 	// create the poly1305 key
@@ -127,9 +128,8 @@ func (c *aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, erro
 func authenticate(out *[TagSize]byte, ciphertext, additionalData []byte, key *[32]byte) {
 	ctLen := uint64(len(ciphertext))
 	adLen := uint64(len(additionalData))
-	padAD, padCT := adLen%TagSize, ctLen%TagSize
 
-	var buf [16]byte
+	var buf, pad [TagSize]byte
 	buf[0] = byte(adLen)
 	buf[1] = byte(adLen >> 8)
 	buf[2] = byte(adLen >> 16)
@@ -148,14 +148,17 @@ func authenticate(out *[TagSize]byte, ciphertext, additionalData []byte, key *[3
 	buf[15] = byte(ctLen >> 56)
 
 	poly := poly1305.New(key)
+
 	poly.Write(additionalData)
-	if padAD > 0 {
-		poly.Write(make([]byte, 16-padAD))
+	if padAD := adLen % TagSize; padAD > 0 {
+		poly.Write(pad[:16-padAD])
 	}
+
 	poly.Write(ciphertext)
-	if padCT > 0 {
-		poly.Write(make([]byte, 16-padCT))
+	if padCT := ctLen % TagSize; padCT > 0 {
+		poly.Write(pad[:16-padCT])
 	}
+
 	poly.Write(buf[:])
 	poly.Sum(out)
 }
