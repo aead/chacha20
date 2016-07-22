@@ -6,6 +6,13 @@
 
 package chacha
 
+var constants = [16]byte{
+	0x65, 0x78, 0x70, 0x61,
+	0x6e, 0x64, 0x20, 0x33,
+	0x32, 0x2d, 0x62, 0x79,
+	0x74, 0x65, 0x20, 0x6b,
+}
+
 // XORKeyStream crypts bytes from src to dst using the given key, nonce and counter.
 // The rounds argument specifies the number of rounds (must be even) performed for
 // keystream generation. (Common values are 20, 12 or 8) Src and dst may be the same
@@ -20,7 +27,6 @@ func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint3
 	}
 
 	var state [64]byte
-
 	copy(state[:], constants[:])
 
 	copy(state[16:], key[:])

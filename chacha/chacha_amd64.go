@@ -8,8 +8,6 @@ package chacha
 
 import "unsafe"
 
-const wordSize = int(unsafe.Sizeof(uintptr(0)))
-
 // XORKeyStream crypts bytes from src to dst using the given key, nonce and counter.
 // The rounds argument specifies the number of rounds (must be even) performed for
 // keystream generation. (Common values are 20, 12 or 8) Src and dst may be the same
@@ -24,20 +22,7 @@ func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint3
 	}
 
 	var state [64]byte
-
-	copy(state[:], constants[:])
-
-	statePtr := (*[8]uint64)(unsafe.Pointer(&state[0]))
-	keyPtr := (*[4]uint64)(unsafe.Pointer(&key[0]))
-
-	statePtr[2] = keyPtr[0]
-	statePtr[3] = keyPtr[1]
-	statePtr[4] = keyPtr[2]
-	statePtr[5] = keyPtr[3]
-
-	statePtr[6] = (*(*uint64)(unsafe.Pointer(&nonce[0])) << 32) | uint64(counter)
-
-	statePtr[7] = *(*uint64)(unsafe.Pointer(&nonce[4]))
+	setState(&state, key, nonce, counter)
 
 	if length >= 64 {
 		xorBlocks(dst, src, &state, rounds)
@@ -59,20 +44,7 @@ func NewCipher(nonce *[12]byte, key *[32]byte, rounds int) *Cipher {
 	}
 	c := new(Cipher)
 	c.rounds = rounds
-
-	copy(c.state[:], constants[:])
-
-	statePtr := (*[8]uint64)(unsafe.Pointer(&(c.state[0])))
-	keyPtr := (*[4]uint64)(unsafe.Pointer(&key[0]))
-
-	statePtr[2] = keyPtr[0]
-	statePtr[3] = keyPtr[1]
-	statePtr[4] = keyPtr[2]
-	statePtr[5] = keyPtr[3]
-
-	statePtr[6] = (*(*uint64)(unsafe.Pointer(&nonce[0])) << 32)
-
-	statePtr[7] = *(*uint64)(unsafe.Pointer(&nonce[4]))
+	setState(&(c.state), key, nonce, 0)
 
 	return c
 }
@@ -83,6 +55,10 @@ func NewCipher(nonce *[12]byte, key *[32]byte, rounds int) *Cipher {
 // If len(src) > len(dst), XORBlocks does nothing.
 //go:noescape
 func xorBlocks(dst, src []byte, state *[64]byte, rounds int)
+
+// setState builds the ChaCha state from the key, the nonce and the counter.
+//go:noescape
+func setState(state *[64]byte, key *[32]byte, nonce *[12]byte, counter uint32)
 
 // Core generates 64 byte keystream from the given state performing 'rounds' rounds
 // and writes them to dst. This function expects valid values. (no nil ptr etc.)
@@ -98,17 +74,17 @@ func xor(dst, src, with []byte) int {
 		n = len(with)
 	}
 
-	w := n / wordSize
+	w := n / 8
 	if w > 0 {
-		dstPtr := *(*[]uintptr)(unsafe.Pointer(&dst))
-		srcPtr := *(*[]uintptr)(unsafe.Pointer(&src))
-		withPtr := *(*[]uintptr)(unsafe.Pointer(&with))
+		dstPtr := *(*[]uint64)(unsafe.Pointer(&dst))
+		srcPtr := *(*[]uint64)(unsafe.Pointer(&src))
+		withPtr := *(*[]uint64)(unsafe.Pointer(&with))
 		for i, v := range srcPtr[:w] {
 			dstPtr[i] = withPtr[i] ^ v
 		}
 	}
 
-	for i := (n & (^(wordSize - 1))); i < n; i++ {
+	for i := (n & (^(8 - 1))); i < n; i++ {
 		dst[i] = src[i] ^ with[i]
 	}
 

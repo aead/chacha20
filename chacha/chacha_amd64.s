@@ -350,3 +350,34 @@ TEXT ·xorBlocks(SB),4,$0-64
 	MOVO X0, 16(SP)
 	MOVQ SI, SP
 	RET
+	
+// func setState(state *[64]byte, key *[32]byte, nonce *[12]byte, counter uint32)
+TEXT ·setState(SB),4,$0-28
+	MOVQ state+0(FP), R12
+	MOVQ key+8(FP), R13
+	MOVQ nonce+16(FP), R14
+	MOVL counter+24(FP), R15
+	
+	MOVQ $0X61707865, 0(R12)
+	MOVL $0X3320646e, 4(R12)
+	MOVL $0X79622d32, 8(R12)
+	MOVL $0X6b206574, 12(R12)
+	
+	MOVQ 0(R13), R8
+	MOVQ 8(R13), R9
+	MOVQ 16(R13), R10
+	MOVQ 24(R13), R11
+	MOVQ R8, 16(R12)
+	MOVQ R9, 24(R12)
+	MOVQ R10, 32(R12)
+	MOVQ R11, 40(R12)
+	
+	MOVL R15, 48(R12)
+	
+	MOVL 0(R14), R8
+	MOVL 4(R14), R9
+	MOVL 8(R14), R10
+	MOVL R8, 52(R12)
+	MOVL R9, 56(R12)
+	MOVL R10, 60(R12)
+	RET

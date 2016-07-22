@@ -51,6 +51,30 @@ func TestSetCounter(t *testing.T) {
 	}
 }
 
+func TestSetNonce(t *testing.T) {
+	var key [32]byte
+	var nonce [12]byte
+	for i := range key {
+		key[i] = byte(i)
+	}
+	buf0, buf1 := make([]byte, 128), make([]byte, 128)
+
+	c := NewCipher(&nonce, &key, 20)
+	c.XORKeyStream(buf0[:1], buf0[:1])
+	nonce[0] = 1
+	c.SetNonce(&nonce)
+	c.XORKeyStream(buf0[1:], buf0[1:])
+
+	nonce[0] = 0
+	XORKeyStream(buf1[:1], buf1[:1], &nonce, &key, 0, 20)
+	nonce[0] = 1
+	XORKeyStream(buf1[1:], buf1[1:], &nonce, &key, 1, 20)
+
+	if !bytes.Equal(buf0, buf1) {
+		t.Fatalf("XORKeyStream differ from chacha.XORKeyStream\n XORKeyStream: %s \n chacha.XORKeyStream: %s", hex.EncodeToString(buf1), hex.EncodeToString(buf0))
+	}
+}
+
 func TestXORKeyStream(t *testing.T) {
 	var key [32]byte
 	var nonce [12]byte

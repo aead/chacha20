@@ -25,8 +25,11 @@ var (
 // ChaCha20Poly1305 construction specified in RFC 7539 with a
 // 128 bit auth. tag.
 func NewChaCha20Poly1305(key *[32]byte) cipher.AEAD {
-	c := &aead{tagsize: TagSize}
-	c.key = *key
+	var defaultNonce [12]byte
+	c := &aead{
+		engine:  chacha.NewCipher(&defaultNonce, key, 20),
+		tagsize: TagSize,
+	}
 	return c
 }
 
@@ -37,14 +40,17 @@ func NewChaCha20Poly1305WithTagSize(key *[32]byte, tagsize int) (cipher.AEAD, er
 	if tagsize < 1 || tagsize > TagSize {
 		return nil, errors.New("tag size must be between 1 and 16")
 	}
-	c := &aead{tagsize: tagsize}
-	c.key = *key
+	var defaultNonce [12]byte
+	c := &aead{
+		engine: chacha.NewCipher(&defaultNonce, key, 20),
+	}
+	c.tagsize = tagsize
 	return c, nil
 }
 
 // The AEAD cipher ChaCha20Poly1305
 type aead struct {
-	key     [32]byte
+	engine  *chacha.Cipher
 	tagsize int
 }
 
@@ -58,15 +64,20 @@ func (c *aead) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	}
 
 	// create the poly1305 key
-	var Nonce [12]byte
+	var (
+		Nonce   [12]byte
+		polyKey [32]byte
+	)
 	copy(Nonce[:], nonce)
-	var polyKey [32]byte
-	chacha.XORKeyStream(polyKey[:], polyKey[:], &Nonce, &(c.key), 0, 20)
+	c.engine.SetCounter(0)
+	c.engine.SetNonce(&Nonce)
+	c.engine.XORKeyStream(polyKey[:], polyKey[:])
+	c.engine.SetCounter(1)
 
 	// encrypt the plaintext
 	n := len(plaintext)
 	ret, ciphertext := sliceForAppend(dst, n+c.tagsize)
-	chacha.XORKeyStream(ciphertext, plaintext, &Nonce, &(c.key), 1, 20)
+	c.engine.XORKeyStream(ciphertext, plaintext)
 
 	// authenticate the ciphertext
 	var tag [poly1305.TagSize]byte
@@ -85,10 +96,15 @@ func (c *aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, erro
 	}
 
 	// create the poly1305 key
-	var Nonce [12]byte
+	var (
+		Nonce   [12]byte
+		polyKey [32]byte
+	)
 	copy(Nonce[:], nonce)
-	var polyKey [32]byte
-	chacha.XORKeyStream(polyKey[:], polyKey[:], &Nonce, &(c.key), 0, 20)
+	c.engine.SetCounter(0)
+	c.engine.SetNonce(&Nonce)
+	c.engine.XORKeyStream(polyKey[:], polyKey[:])
+	c.engine.SetCounter(1)
 
 	// authenticate the ciphertext
 	n := len(ciphertext) - c.tagsize
@@ -101,7 +117,7 @@ func (c *aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, erro
 
 	// decrypt ciphertext
 	ret, plaintext := sliceForAppend(dst, n)
-	chacha.XORKeyStream(plaintext, ciphertext[:n], &Nonce, &(c.key), 1, 20)
+	c.engine.XORKeyStream(plaintext, ciphertext[:n])
 
 	return ret, nil
 }
