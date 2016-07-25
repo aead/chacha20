@@ -31,7 +31,6 @@ func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint3
 	if n := length & (^(64 - 1)); length-n > 0 {
 		var block [64]byte
 		Core(&block, &state, rounds)
-
 		xor(dst[n:], src[n:], block[:])
 	}
 }

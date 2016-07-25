@@ -366,12 +366,12 @@ TEXT ·setState(SB),4,$0-28
 	MOVL counter+24(FP), DX
 	
 	MOVOU constants<>(SB), X0
-	MOVO X0, 0(AX)
+	MOVOU X0, 0(AX)
 	
 	MOVOU 0(BX), X0
-	MOVO X0, 16(AX)
+	MOVOU X0, 16(AX)
 	MOVOU 16(BX), X1
-	MOVO X1, 32(AX) 
+	MOVOU X1, 32(AX)
 
 	MOVL DX, 48(AX)
 	
