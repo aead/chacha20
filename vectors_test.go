@@ -112,6 +112,71 @@ var chacha20TestVectors = []struct {
 	},
 }
 
+// From https://tools.ietf.org/html/draft-strombergson-chacha-test-vectors-01
+var chacha20Nonce8Vectors = []struct {
+	key, nonce, stream string
+}{
+	{
+		key:   "0000000000000000000000000000000000000000000000000000000000000000",
+		nonce: "0000000000000000",
+		stream: "76b8e0ada0f13d90405d6ae55386bd28bdd219b8a08ded1aa836efcc8b770dc7" +
+			"da41597c5157488d7724e03fb8d84a376a43b8f41518a11cc387b669b2ee6586" +
+			"9f07e7be5551387a98ba977c732d080dcb0f29a048e3656912c6533e32ee7aed" +
+			"29b721769ce64e43d57133b074d839d531ed1f28510afb45ace10a1f4b794d6f",
+	},
+	{
+		key:   "0100000000000000000000000000000000000000000000000000000000000000",
+		nonce: "0000000000000000",
+		stream: "c5d30a7ce1ec119378c84f487d775a8542f13ece238a9455e8229e888de85bbd" +
+			"29eb63d0a17a5b999b52da22be4023eb07620a54f6fa6ad8737b71eb0464dac0" +
+			"10f656e6d1fd55053e50c4875c9930a33f6d0263bd14dfd6ab8c70521c19338b" +
+			"2308b95cf8d0bb7d202d2102780ea3528f1cb48560f76b20f382b942500fceac",
+	},
+	{
+		key:   "0000000000000000000000000000000000000000000000000000000000000000",
+		nonce: "0100000000000000",
+		stream: "ef3fdfd6c61578fbf5cf35bd3dd33b8009631634d21e42ac33960bd138e50d32" +
+			"111e4caf237ee53ca8ad6426194a88545ddc497a0b466e7d6bbdb0041b2f586b" +
+			"5305e5e44aff19b235936144675efbe4409eb7e8e5f1430f5f5836aeb49bb532" +
+			"8b017c4b9dc11f8a03863fa803dc71d5726b2b6b31aa32708afe5af1d6b69058",
+	},
+	{
+		key:   "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+		nonce: "ffffffffffffffff",
+		stream: "d9bf3f6bce6ed0b54254557767fb57443dd4778911b606055c39cc25e674b836" +
+			"3feabc57fde54f790c52c8ae43240b79d49042b777bfd6cb80e931270b7f50eb" +
+			"5bac2acd86a836c5dc98c116c1217ec31d3a63a9451319f097f3b4d6dab07787" +
+			"19477d24d24b403a12241d7cca064f790f1d51ccaff6b1667d4bbca1958c4306",
+	},
+}
+
+func TestChaCha20For8Nonce(t *testing.T) {
+	for i, v := range chacha20Nonce8Vectors {
+		key := fromHex(v.key)
+		nonce := fromHex(v.nonce)
+		keystream := fromHex(v.stream)
+
+		var (
+			Key   [32]byte
+			Nonce [12]byte
+		)
+		copy(Key[:], key)
+		copy(Nonce[4:], nonce)
+		buf := make([]byte, len(keystream))
+
+		XORKeyStream(buf, make([]byte, len(buf)), &Nonce, &Key, 0)
+		if !bytes.Equal(buf, keystream) {
+			t.Fatalf("Test vector %d :\nXORKeyStream() produces unexpected keystream:\nXORKeyStream(): %s\nExpected:             %s", i, hex.EncodeToString(buf), hex.EncodeToString(keystream))
+		}
+
+		c := NewCipher(&Nonce, &Key)
+		c.XORKeyStream(buf[:], make([]byte, len(buf)))
+		if !bytes.Equal(buf, keystream) {
+			t.Fatalf("Test vector %d :\nc.XORKeyStream() produces unexpected keystream:\nc.XORKeyStream(): %s\nExpected:         %s", i, hex.EncodeToString(buf), hex.EncodeToString(keystream))
+		}
+	}
+}
+
 func TestVectors(t *testing.T) {
 	for i, v := range chacha20TestVectors {
 		key := fromHex(v.key)
