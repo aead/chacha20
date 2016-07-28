@@ -24,7 +24,7 @@ DATA rol8<>+0x00(SB)/8, $0x0605040702010003
 DATA rol8<>+0x08(SB)/8, $0x0E0D0C0F0A09080B
 GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 
-// *** The rotate left markos ***
+// *** The rotate left makros ***
 
 // On SSE2
 #define ROTL(n, t, v) \
@@ -34,14 +34,10 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR t, v
 
 // On SSSE3
-#define ROTL16(v) \
-	PSHUFB rol16<>(SB), v
+#define ROTL_SSSE3(c, v) \
+	PSHUFB c, v
 
-// On SSSE3
-#define ROTL8(v) \
-	PSHUFB rol8<>(SB), v
-
-// *** The shuffle markos ***
+// *** The shuffle makros ***
 
 #define SHUFFLE_64(k0, k1, k2, a, b, c) \
 	PSHUFL $k0, a, a; \
@@ -70,7 +66,7 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PSHUFL $k2, c2, c2; \
 	PSHUFL $k2, c3, c3
 
-// *** The chacha round markos ***
+// *** The chacha round makros ***
 
 #define HALF_ROUND_64_SSE2(v0 , v1 , v2 , v3 , t0) \
 	PADDL v1, v0; \
@@ -89,13 +85,13 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 #define HALF_ROUND_64_SSSE3(v0 , v1 , v2 , v3 , t0) \
 	PADDL v1, v0; \
 	PXOR v0, v3; \
-	ROTL16(v3); \
+	ROTL_SSSE3(rol16<>(SB), v3); \
 	PADDL v3, v2; \
 	PXOR v2, v1; \
 	ROTL(12, t0, v1); \
 	PADDL v1, v0; \
 	PXOR v0, v3; \
-	ROTL8(v3); \
+	ROTL_SSSE3(rol8<>(SB), v3); \
 	PADDL v3, v2; \
 	PXOR v2, v1; \
 	ROTL(7, t0, v1)
@@ -131,8 +127,8 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PADDL v5, v4; \
 	PXOR v0, v3; \
 	PXOR v4, v7; \
-	ROTL16(v3); \
-	ROTL16(v7); \
+	ROTL_SSSE3(rol16<>(SB), v3); \
+	ROTL_SSSE3(rol16<>(SB), v7); \
 	PADDL v3, v2; \
 	PADDL v7, v6; \
 	PXOR v2, v1; \
@@ -143,8 +139,8 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PADDL v5, v4; \
 	PXOR v0, v3; \
 	PXOR v4, v7; \
-	ROTL8(v3); \
-	ROTL8(v7); \
+	ROTL_SSSE3(rol8<>(SB), v3); \
+	ROTL_SSSE3(rol8<>(SB), v7); \
 	PADDL v3, v2; \
 	PADDL v7, v6; \
 	PXOR v2, v1; \
@@ -215,10 +211,10 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR v4, v7; \
 	PXOR v8, v11; \
 	PXOR v12, v15; \
-	ROTL16(v3); \
-	ROTL16(v7); \
-	ROTL16(v11); \
-	ROTL16(v15); \
+	ROTL_SSSE3(rol16<>(SB), v3); \
+	ROTL_SSSE3(rol16<>(SB), v7); \
+	ROTL_SSSE3(rol16<>(SB), v11); \
+	ROTL_SSSE3(rol16<>(SB), v15); \
 	PADDL v3, v2; \
 	PADDL v7, v6; \
 	PADDL v11, v10; \
@@ -241,10 +237,10 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR v4, v7; \
 	PXOR v8, v11; \
 	PXOR v12, v15; \
-	ROTL8(v3); \
-	ROTL8(v7); \
-	ROTL8(v11); \
-	ROTL8(v15); \
+	ROTL_SSSE3(rol8<>(SB), v3); \
+	ROTL_SSSE3(rol8<>(SB), v7); \
+	ROTL_SSSE3(rol8<>(SB), v11); \
+	ROTL_SSSE3(rol8<>(SB), v15); \
 	PADDL v3, v2; \
 	PADDL v7, v6; \
 	PADDL v11, v10; \
