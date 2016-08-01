@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
-// +build go1.7, amd64, !gccgo, !appengine, !go1.6
+// +build ignore
 
 #include "textflag.h"
 
@@ -133,7 +133,6 @@ TEXT ·xorBlocksAVX2(SB),4,$0-64
 	MOVL SI, 16(SP)
 	VMOVDQA 0(SP), Y14
 	MOVQ R15, SP
-	
 	
 	BROADCASTI128(0(AX), Y8) 
 	BROADCASTI128(16(AX), Y9)
