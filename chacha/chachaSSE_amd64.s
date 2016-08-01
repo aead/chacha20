@@ -24,10 +24,16 @@ DATA rol8<>+0x00(SB)/8, $0x0605040702010003
 DATA rol8<>+0x08(SB)/8, $0x0E0D0C0F0A09080B
 GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 
-// *** The rotate left makros ***
+// func cpuid() (cx uint32)
+TEXT ·cpuid(SB),7,$0
+	XORQ CX, CX
+	MOVL $1, AX
+	CPUID
+	MOVL CX, cx+0(FP)
+	RET
 
 // On SSE2
-#define ROTL(n, t, v) \
+#define ROTL_SSE2(n, t, v) \
  	MOVO v, t; \
 	PSLLL $n, t; \
 	PSRLL $(32-n), v; \
@@ -71,16 +77,16 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 #define HALF_ROUND_64_SSE2(v0 , v1 , v2 , v3 , t0) \
 	PADDL v1, v0; \
 	PXOR v0, v3; \
-	ROTL(16, t0, v3); \
+	ROTL_SSE2(16, t0, v3); \
 	PADDL v3, v2; \
 	PXOR v2, v1; \
-	ROTL(12, t0, v1); \
+	ROTL_SSE2(12, t0, v1); \
 	PADDL v1, v0; \
 	PXOR v0, v3; \
-	ROTL(8, t0, v3); \
+	ROTL_SSE2(8, t0, v3); \
 	PADDL v3, v2; \
 	PXOR v2, v1; \
-	ROTL(7, t0, v1)
+	ROTL_SSE2(7, t0, v1)
 
 #define HALF_ROUND_64_SSSE3(v0 , v1 , v2 , v3 , t0) \
 	PADDL v1, v0; \
@@ -88,39 +94,39 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	ROTL_SSSE3(rol16<>(SB), v3); \
 	PADDL v3, v2; \
 	PXOR v2, v1; \
-	ROTL(12, t0, v1); \
+	ROTL_SSE2(12, t0, v1); \
 	PADDL v1, v0; \
 	PXOR v0, v3; \
 	ROTL_SSSE3(rol8<>(SB), v3); \
 	PADDL v3, v2; \
 	PXOR v2, v1; \
-	ROTL(7, t0, v1)
+	ROTL_SSE2(7, t0, v1)
 
 #define HALF_ROUND_128_SSE2(v0, v1, v2, v3, v4, v5, v6, v7, t0) \
 	PADDL v1, v0; \
 	PADDL v5, v4; \
 	PXOR v0, v3; \
 	PXOR v4, v7; \
-	ROTL(16, t0, v3); \
-	ROTL(16, t0, v7); \
+	ROTL_SSE2(16, t0, v3); \
+	ROTL_SSE2(16, t0, v7); \
 	PADDL v3, v2; \
 	PADDL v7, v6; \
 	PXOR v2, v1; \
 	PXOR v6, v5; \
-	ROTL(12, t0, v1); \
-	ROTL(12, t0, v5); \
+	ROTL_SSE2(12, t0, v1); \
+	ROTL_SSE2(12, t0, v5); \
 	PADDL v1, v0; \
 	PADDL v5, v4; \
 	PXOR v0, v3; \
 	PXOR v4, v7; \
-	ROTL(8, t0, v3); \
-	ROTL(8, t0, v7); \
+	ROTL_SSE2(8, t0, v3); \
+	ROTL_SSE2(8, t0, v7); \
 	PADDL v3, v2; \
 	PADDL v7, v6; \
 	PXOR v2, v1; \
 	PXOR v6, v5; \
-	ROTL(7, t0, v1); \
-	ROTL(7, t0, v5)
+	ROTL_SSE2(7, t0, v1); \
+	ROTL_SSE2(7, t0, v5)
 	
 #define HALF_ROUND_128_SSSE3(v0, v1, v2, v3, v4, v5, v6, v7, t0) \
 	PADDL v1, v0; \
@@ -133,8 +139,8 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PADDL v7, v6; \
 	PXOR v2, v1; \
 	PXOR v6, v5; \
-	ROTL(12, t0, v1); \
-	ROTL(12, t0, v5); \
+	ROTL_SSE2(12, t0, v1); \
+	ROTL_SSE2(12, t0, v5); \
 	PADDL v1, v0; \
 	PADDL v5, v4; \
 	PXOR v0, v3; \
@@ -145,8 +151,8 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PADDL v7, v6; \
 	PXOR v2, v1; \
 	PXOR v6, v5; \
-	ROTL(7, t0, v1); \
-	ROTL(7, t0, v5)
+	ROTL_SSE2(7, t0, v1); \
+	ROTL_SSE2(7, t0, v5)
 
 #define HALF_ROUND_256_SSE2(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, t0) \
 	PADDL v1, v0; \
@@ -158,10 +164,10 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR v8, v11; \
 	PXOR v12, v15; \
 	MOVO v12, t0; \
-	ROTL(16, v12, v3); \
-	ROTL(16, v12, v7); \
-	ROTL(16, v12, v11); \
-	ROTL(16, v12, v15); \
+	ROTL_SSE2(16, v12, v3); \
+	ROTL_SSE2(16, v12, v7); \
+	ROTL_SSE2(16, v12, v11); \
+	ROTL_SSE2(16, v12, v15); \
 	PADDL v3, v2; \
 	PADDL v7, v6; \
 	PADDL v11, v10; \
@@ -170,10 +176,10 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR v6, v5; \
 	PXOR v10, v9; \
 	PXOR v14, v13; \
-	ROTL(12, v12, v1); \
-	ROTL(12, v12, v5); \
-	ROTL(12, v12, v9); \
-	ROTL(12, v12, v13); \
+	ROTL_SSE2(12, v12, v1); \
+	ROTL_SSE2(12, v12, v5); \
+	ROTL_SSE2(12, v12, v9); \
+	ROTL_SSE2(12, v12, v13); \
 	MOVO t0, v12; \
 	PADDL v1, v0; \
 	PADDL v5, v4; \
@@ -184,10 +190,10 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR v8, v11; \
 	PXOR v12, v15; \
 	MOVO v12, t0; \
-	ROTL(8, v12, v3); \
-	ROTL(8, v12, v7); \
-	ROTL(8, v12, v11); \
-	ROTL(8, v12, v15); \
+	ROTL_SSE2(8, v12, v3); \
+	ROTL_SSE2(8, v12, v7); \
+	ROTL_SSE2(8, v12, v11); \
+	ROTL_SSE2(8, v12, v15); \
 	PADDL v3, v2; \
 	PADDL v7, v6; \
 	PADDL v11, v10; \
@@ -196,10 +202,10 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR v6, v5; \
 	PXOR v10, v9; \
 	PXOR v14, v13; \
-	ROTL(7, v12, v1); \
-	ROTL(7, v12, v5); \
-	ROTL(7, v12, v9); \
-	ROTL(7, v12, v13); \
+	ROTL_SSE2(7, v12, v1); \
+	ROTL_SSE2(7, v12, v5); \
+	ROTL_SSE2(7, v12, v9); \
+	ROTL_SSE2(7, v12, v13); \
 	MOVO t0, v12
 	
 #define HALF_ROUND_256_SSSE3(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, t0) \
@@ -224,10 +230,10 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR v10, v9; \
 	PXOR v14, v13; \
 	MOVO v12, t0; \
-	ROTL(12, v12, v1); \
-	ROTL(12, v12, v5); \
-	ROTL(12, v12, v9); \
-	ROTL(12, v12, v13); \
+	ROTL_SSE2(12, v12, v1); \
+	ROTL_SSE2(12, v12, v5); \
+	ROTL_SSE2(12, v12, v9); \
+	ROTL_SSE2(12, v12, v13); \
 	MOVO t0, v12; \
 	PADDL v1, v0; \
 	PADDL v5, v4; \
@@ -250,15 +256,15 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR v10, v9; \
 	PXOR v14, v13; \
 	MOVO v12, t0; \
-	ROTL(7, v12, v1); \
-	ROTL(7, v12, v5); \
-	ROTL(7, v12, v9); \
-	ROTL(7, v12, v13); \
+	ROTL_SSE2(7, v12, v1); \
+	ROTL_SSE2(7, v12, v5); \
+	ROTL_SSE2(7, v12, v9); \
+	ROTL_SSE2(7, v12, v13); \
 	MOVO t0, v12
 
 // *** The xor makro ***
 
-#define XOR_64B(dst, src, off, v0 , v1 , v2 , v3 , t0) \
+#define XOR_64(dst, src, off, v0 , v1 , v2 , v3 , t0) \
 	MOVOU 0+off(src), t0; \
 	PXOR v0, t0; \
 	MOVOU t0, 0+off(dst); \
@@ -387,27 +393,27 @@ TEXT ·xorBlocksSSE2(SB),4,$0-64
 	PADDL 16(AX), X1
 	PADDL 32(AX), X2
 	PADDL 48(AX), X3
-	XOR_64B(BX, CX, 0, X0, X1, X2, X3, X12)
+	XOR_64(BX, CX, 0, X0, X1, X2, X3, X12)
 	MOVO 48(AX), X3
 	PADDQ one<>(SB), X3
 	PADDL 0(AX), X4
 	PADDL 16(AX), X5
 	PADDL 32(AX), X6
 	PADDL X3, X7
-	XOR_64B(BX, CX, 64, X4, X5, X6, X7, X12)
+	XOR_64(BX, CX, 64, X4, X5, X6, X7, X12)
 	PADDQ one<>(SB), X3
 	PADDL 0(AX), X8
 	PADDL 16(AX), X9
 	PADDL 32(AX), X10
 	PADDL X3, X11
-	XOR_64B(BX, CX, 128, X8, X9, X10, X11, X12)
+	XOR_64(BX, CX, 128, X8, X9, X10, X11, X12)
 	PADDQ one<>(SB), X3
 	MOVO 0(SP), X12
 	PADDL 0(AX), X12
 	PADDL 16(AX), X13
 	PADDL 32(AX), X14
 	PADDL X3, X15		
-	XOR_64B(BX, CX, 192, X12, X13, X14, X15, X0)
+	XOR_64(BX, CX, 192, X12, X13, X14, X15, X0)
 	PADDQ one<>(SB), X3
 	MOVO X3, 48(AX)
 	ADDQ $256, CX
@@ -446,13 +452,13 @@ TEXT ·xorBlocksSSE2(SB),4,$0-64
 	PADDL X1, X5
 	PADDL X2, X6
 	PADDL X3, X7
-	XOR_64B(BX, CX, 0, X4, X5, X6, X7, X12)
+	XOR_64(BX, CX, 0, X4, X5, X6, X7, X12)
 	PADDQ X15, X3
 	PADDL X0, X8
 	PADDL X1, X9
 	PADDL X2, X10
 	PADDL X3, X11
-	XOR_64B(BX, CX, 64, X8, X9, X10, X11, X12)
+	XOR_64(BX, CX, 64, X8, X9, X10, X11, X12)
 	PADDQ X15, X3
 	MOVO X3, 48(AX)
 	ADDQ $128, CX
@@ -482,7 +488,7 @@ TEXT ·xorBlocksSSE2(SB),4,$0-64
 	PADDL X1, X5
 	PADDL X2, X6
 	PADDL X3, X7
-	XOR_64B(BX, CX, 0, X4, X5, X6, X7, X8)
+	XOR_64(BX, CX, 0, X4, X5, X6, X7, X8)
 	PADDQ X15, X3
 	MOVO X3, 48(AX)
 	DONE:
@@ -540,27 +546,27 @@ TEXT ·xorBlocksSSSE3(SB),4,$0-64
 	PADDL 16(AX), X1
 	PADDL 32(AX), X2
 	PADDL 48(AX), X3
-	XOR_64B(BX, CX, 0, X0, X1, X2, X3, X12)
+	XOR_64(BX, CX, 0, X0, X1, X2, X3, X12)
 	MOVO 48(AX), X3
 	PADDQ one<>(SB), X3
 	PADDL 0(AX), X4
 	PADDL 16(AX), X5
 	PADDL 32(AX), X6
 	PADDL X3, X7
-	XOR_64B(BX, CX, 64, X4, X5, X6, X7, X12)
+	XOR_64(BX, CX, 64, X4, X5, X6, X7, X12)
 	PADDQ one<>(SB), X3
 	PADDL 0(AX), X8
 	PADDL 16(AX), X9
 	PADDL 32(AX), X10
 	PADDL X3, X11
-	XOR_64B(BX, CX, 128, X8, X9, X10, X11, X12)
+	XOR_64(BX, CX, 128, X8, X9, X10, X11, X12)
 	PADDQ one<>(SB), X3
 	MOVO 0(SP), X12
 	PADDL 0(AX), X12
 	PADDL 16(AX), X13
 	PADDL 32(AX), X14
 	PADDL X3, X15		
-	XOR_64B(BX, CX, 192, X12, X13, X14, X15, X0)
+	XOR_64(BX, CX, 192, X12, X13, X14, X15, X0)
 	PADDQ one<>(SB), X3
 	MOVO X3, 48(AX)
 	ADDQ $256, CX
@@ -599,13 +605,13 @@ TEXT ·xorBlocksSSSE3(SB),4,$0-64
 	PADDL X1, X5
 	PADDL X2, X6
 	PADDL X3, X7
-	XOR_64B(BX, CX, 0, X4, X5, X6, X7, X12)
+	XOR_64(BX, CX, 0, X4, X5, X6, X7, X12)
 	PADDQ X15, X3
 	PADDL X0, X8
 	PADDL X1, X9
 	PADDL X2, X10
 	PADDL X3, X11
-	XOR_64B(BX, CX, 64, X8, X9, X10, X11, X12)
+	XOR_64(BX, CX, 64, X8, X9, X10, X11, X12)
 	PADDQ X15, X3
 	MOVO X3, 48(AX)
 	ADDQ $128, CX
@@ -635,7 +641,7 @@ TEXT ·xorBlocksSSSE3(SB),4,$0-64
 	PADDL X1, X5
 	PADDL X2, X6
 	PADDL X3, X7
-	XOR_64B(BX, CX, 0, X4, X5, X6, X7, X8)
+	XOR_64(BX, CX, 0, X4, X5, X6, X7, X8)
 	PADDQ X15, X3
 	MOVO X3, 48(AX)
 	DONE:
@@ -643,7 +649,7 @@ TEXT ·xorBlocksSSSE3(SB),4,$0-64
 	MOVO X0, 0(SP)
 	MOVQ SI, SP
 	RET
-	
+
 // func setState(state *[64]byte, key *[32]byte, nonce *[12]byte, counter uint32)
 TEXT ·setState(SB),4,$0-28
 	MOVQ state+0(FP), AX
@@ -665,12 +671,4 @@ TEXT ·setState(SB),4,$0-28
 	MOVQ 4(CX), R9
 	MOVL R8, 52(AX)
 	MOVQ R9, 56(AX)
-	RET
-
-// func cpuid() (cx uint32)
-TEXT ·cpuid(SB),7,$0
-	XORQ CX, CX
-	MOVL $1, AX
-	CPUID
-	MOVL CX, cx+0(FP)
 	RET

@@ -123,3 +123,35 @@ func TestXORKeyStreamPanic(t *testing.T) {
 	mustFail2(t, "len(dst) < len(src)", dst[:len(src)-1], src)
 
 }
+
+func testXORBlocks(t *testing.T, size int) {
+	var key [32]byte
+	var nonce [12]byte
+	for i := range nonce {
+		nonce[i] = byte(i)
+		key[2*i] = byte(i)
+	}
+
+	var dst0, src0 [64]byte
+	dst1, src1 := make([]byte, size), make([]byte, size)
+
+	XORKeyStream(dst1, src1, &nonce, &key, 0, 20)
+	for i := 0; i < size; i += 64 {
+		XORKeyStream(dst0[:], src0[:], &nonce, &key, uint32(i/64), 20)
+		if !bytes.Equal(dst0[:], dst1[i:i+64]) {
+			t.Fatalf("Index %d Size: %d: XORKeyStream produce unexpected keystream", i, size)
+		}
+	}
+}
+
+func TestXorBlocks(t *testing.T) {
+	testXORBlocks(t, 64)
+	testXORBlocks(t, 128)
+	testXORBlocks(t, 192)
+	testXORBlocks(t, 256)
+	testXORBlocks(t, 320)
+	testXORBlocks(t, 384)
+	testXORBlocks(t, 448)
+	testXORBlocks(t, 512)
+	testXORBlocks(t, 1024)
+}

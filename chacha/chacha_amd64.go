@@ -50,27 +50,6 @@ func NewCipher(nonce *[12]byte, key *[32]byte, rounds int) *Cipher {
 	return c
 }
 
-// xorBlocks crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
-// dst using the state. Src and dst may be the same slice but otherwise should not
-// overlap. This function increments the counter of state.
-func xorBlocks(dst, src []byte, state *[64]byte, rounds int) {
-	if useSSSE3 {
-		xorBlocksSSSE3(dst, src, state, rounds)
-	} else {
-		xorBlocksSSE2(dst, src, state, rounds)
-	}
-}
-
-// xorBlocksSSE2 crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
-// dst using the state.
-//go:noescape
-func xorBlocksSSE2(dst, src []byte, state *[64]byte, rounds int)
-
-// xorBlocksSSSE3 crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
-// dst using the state.
-//go:noescape
-func xorBlocksSSSE3(dst, src []byte, state *[64]byte, rounds int)
-
 // Core generates 64 byte keystream from the given state performing 'rounds' rounds
 // and writes them to dst. This function expects valid values. (no nil ptr etc.)
 // Core increments the counter of state.
@@ -80,26 +59,6 @@ func Core(dst *[64]byte, state *[64]byte, rounds int) {
 	} else {
 		coreSSE2(dst, state, rounds)
 	}
-}
-
-// coreSSE2 generates 64 byte keystream from the given state performing 'rounds' rounds
-// and writes them to dst.
-func coreSSE2(dst *[64]byte, state *[64]byte, rounds int)
-
-// coreSSSE3 generates 64 byte keystream from the given state performing 'rounds' rounds
-// and writes them to dst.
-func coreSSSE3(dst *[64]byte, state *[64]byte, rounds int)
-
-// setState builds the ChaCha state from the key, the nonce and the counter.
-//go:noescape
-func setState(state *[64]byte, key *[32]byte, nonce *[12]byte, counter uint32)
-
-//go:noescape
-func cpuid() (cx uint32)
-
-func supportSSSE3() bool {
-	cx := cpuid()
-	return ((cx & 1) != 0) && ((cx & 0x200) != 0) // return SSE3 && SSSE3
 }
 
 // xor xors the bytes in src and with and writes the result to dst.
@@ -127,3 +86,35 @@ func xor(dst, src, with []byte) int {
 
 	return n
 }
+
+// supportSSSE3 returns true if the runtime (the executing machine) supports SSSE3.
+func supportSSSE3() bool {
+	cx := cpuid()
+	return ((cx & 1) != 0) && ((cx & 0x200) != 0) // return SSE3 && SSSE3
+}
+
+// xorBlocksSSE2 crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
+// dst using the state.
+//go:noescape
+func xorBlocksSSE2(dst, src []byte, state *[64]byte, rounds int)
+
+// xorBlocksSSSE3 crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
+// dst using the state.
+//go:noescape
+func xorBlocksSSSE3(dst, src []byte, state *[64]byte, rounds int)
+
+// coreSSE2 generates 64 byte keystream from the given state performing 'rounds' rounds
+// and writes them to dst.
+func coreSSE2(dst *[64]byte, state *[64]byte, rounds int)
+
+// coreSSSE3 generates 64 byte keystream from the given state performing 'rounds' rounds
+// and writes them to dst.
+func coreSSSE3(dst *[64]byte, state *[64]byte, rounds int)
+
+// setState builds the ChaCha state from the key, the nonce and the counter.
+//go:noescape
+func setState(state *[64]byte, key *[32]byte, nonce *[12]byte, counter uint32)
+
+// cpuid returns the cx register after the CPUID instruction is executed.
+//go:noescape
+func cpuid() (cx uint32)
