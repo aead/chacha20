@@ -2,12 +2,11 @@
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
-// +build ignore
+// +build amd64, go1.7, !gccgo, !appengine, !go1.6
 
 package chacha
 
-// go1.7 is still beta (and this AVX2 implementation is experimenal) disabled
-var useAVX2 = supportAVX2() == 1 && false
+var useAVX2 = supportAVX2() == 1
 
 // xorBlocks crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
 // dst using the state. Src and dst may be the same slice but otherwise should not

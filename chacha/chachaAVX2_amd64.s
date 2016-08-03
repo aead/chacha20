@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
-// +build ignore
+// +build amd64, go1.7, !gccgo, !appengine, !go1.6
 
 #include "textflag.h"
 
