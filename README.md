@@ -17,10 +17,10 @@ Install in your GOPATH: `go get -u github.com/aead/chacha20`
 Benchmarks are run on a Intel i7-6500U (Sky Lake) on linux/amd64 with Go 1.6.3
 ```
 Using AVX2
-BenchmarkSeal64B-4           	167.98 MB/s
+BenchmarkSeal64B-4            167.98 MB/s
 BenchmarkSeal1K-4             821.10 MB/s
 BenchmarkSeal64K-4           1087.60 MB/s
-BenchmarkOpen64B-4           	164.77 MB/s
+BenchmarkOpen64B-4            164.77 MB/s
 BenchmarkOpen1K-4             824.25 MB/s
 BenchmarkOpen64K-4           1088.38 MB/s
 BenchmarkCipher64-4           577.03 MB/s
