@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 // +build go1.7
-// +build !gccgo, !appengine
 
 #include "textflag.h"
 
@@ -119,7 +118,7 @@ TEXT ·xorBlocksAVX2(SB),4,$0-64
 	MOVQ rounds+56(FP), R8
 	ANDQ $0xFFFFFFFFFFFFFFC0, DX	// DX = len(src) - (len(src) % 64)
 	
-	// for some weird reason cannot use a constant (no stack alloc) (experimental?!)
+	// for some weird reason cannot use a constant (no stack alloc)
 	MOVQ SP, R15
 	ANDQ $0xFFFFFFFFFFFFFFE0, SP	// align 32 byte
 	SUBQ $32, SP

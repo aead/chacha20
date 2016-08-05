@@ -4,6 +4,8 @@
 
 // +build !amd64
 
+// This file defines all functions, neccessery for non-amd64 systems.
+
 package chacha
 
 var constants = [16]byte{
@@ -11,75 +13,6 @@ var constants = [16]byte{
 	0x6e, 0x64, 0x20, 0x33,
 	0x32, 0x2d, 0x62, 0x79,
 	0x74, 0x65, 0x20, 0x6b,
-}
-
-// XORKeyStream crypts bytes from src to dst using the given key, nonce and counter.
-// The rounds argument specifies the number of rounds (must be even) performed for
-// keystream generation. (Common values are 20, 12 or 8) Src and dst may be the same
-// slice but otherwise should not overlap. If len(dst) < len(src) this function panics.
-func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint32, rounds int) {
-	length := len(src)
-	if len(dst) < length {
-		panic("chacha20/chacha: dst buffer is to small")
-	}
-	if rounds <= 0 || rounds%2 != 0 {
-		panic("chacha20/chacha: rounds must be a multiple of 2")
-	}
-
-	var state [64]byte
-	copy(state[:], constants[:])
-
-	copy(state[16:], key[:])
-
-	state[48] = byte(counter)
-	state[49] = byte(counter << 8)
-	state[50] = byte(counter << 16)
-	state[51] = byte(counter << 24)
-
-	copy(state[52:], nonce[:])
-
-	if length >= 64 {
-		xorBlocks(dst, src, &state, rounds)
-	}
-
-	if n := length & (^(64 - 1)); length-n > 0 {
-		var block [64]byte
-		Core(&block, &state, rounds)
-
-		xor(dst[n:], src[n:], block[:])
-	}
-}
-
-// NewCipher returns a new *chacha.Cipher implementing the ChaCha/X (X = even number of rounds)
-// stream cipher. The nonce must be unique for one key for all time.
-func NewCipher(nonce *[12]byte, key *[32]byte, rounds int) *Cipher {
-	if rounds <= 0 || rounds%2 != 0 {
-		panic("chacha20/chacha: rounds must be a multiply of 2")
-	}
-	c := new(Cipher)
-	c.rounds = rounds
-
-	copy(c.state[:], constants[:])
-
-	copy(c.state[16:], key[:])
-
-	copy(c.state[52:], nonce[:])
-
-	return c
-}
-
-// xorBlocks crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
-// dst using the state. Src and dst may be the same slice
-// but otherwise should not overlap. If len(dst) < len(src) the behavior is undefined.
-// This function increments the counter of state.
-func xorBlocks(dst, src []byte, state *[64]byte, rounds int) {
-	n := len(src) & (^(64 - 1))
-
-	var block [64]byte
-	for i := 0; i < n; i += 64 {
-		Core(&block, state, rounds)
-		xor(dst[i:], src[i:], block[:])
-	}
 }
 
 // Core generates 64 byte keystream from the given state performing 'rounds' rounds
@@ -307,6 +240,31 @@ func Core(dst *[64]byte, state *[64]byte, rounds int) {
 	dst[61] = byte(v15 >> 8)
 	dst[62] = byte(v15 >> 16)
 	dst[63] = byte(v15 >> 24)
+}
+
+// setState builds the ChaCha state from the key, the nonce and the counter.
+func setState(state *[64]byte, key *[32]byte, nonce *[12]byte, counter uint32) {
+	copy(state[:], constants[:])
+	copy(state[16:], key[:])
+	state[48] = byte(counter)
+	state[49] = byte(counter << 8)
+	state[50] = byte(counter << 16)
+	state[51] = byte(counter << 24)
+	copy(state[52:], nonce[:])
+}
+
+// xorBlocks crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
+// dst using the state. Src and dst may be the same slice
+// but otherwise should not overlap. If len(dst) < len(src) the behavior is undefined.
+// This function increments the counter of state.
+func xorBlocks(dst, src []byte, state *[64]byte, rounds int) {
+	n := len(src) & (^(64 - 1))
+
+	var block [64]byte
+	for i := 0; i < n; i += 64 {
+		Core(&block, state, rounds)
+		xor(dst[i:], src[i:], block[:])
+	}
 }
 
 // xor xors the bytes in src and with and writes the result to dst.
