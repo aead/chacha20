@@ -15,9 +15,10 @@ Following Go versions are supported:
  - 1.5.3
  - 1.5.4
  - 1.6.x
- - 1.7 (currently rc5)
+ - 1.7 (currently rc5) 
+
 Notice, that the code is only tested on amd64 and x86.
-On amd64 machines the CPU feature [SSE2](https://en.wikipedia.org/wiki/SSE2 "Wikipedia") is requiremented. 
+On amd64 machines the CPU feature [SSE2](https://en.wikipedia.org/wiki/SSE2 "Wikipedia") is required. 
 
 ### Installation
 Install in your GOPATH: `go get -u github.com/aead/chacha20`  
