@@ -18,6 +18,12 @@ DATA rol8<>+0x10(SB)/8, $0x0605040702010003
 DATA rol8<>+0x18(SB)/8, $0x0E0D0C0F0A09080B
 GLOBL rol8<>(SB), (NOPTR+RODATA), $32
 
+DATA one<>+0x00(SB)/8, $0x0
+DATA one<>+0x08(SB)/8, $0x0
+DATA one<>+0x10(SB)/8, $0x1
+DATA one<>+0x18(SB)/8, $0x0
+GLOBL one<>(SB), (NOPTR+RODATA), $32
+
 // func supportAVX2() int
 TEXT ·supportAVX2(SB),4,$0-8
 	MOVQ $0, AX
@@ -118,21 +124,9 @@ TEXT ·xorBlocksAVX2(SB),4,$0-64
 	MOVQ rounds+56(FP), R8
 	ANDQ $0xFFFFFFFFFFFFFFC0, DX	// DX = len(src) - (len(src) % 64)
 	
-	// for some weird reason cannot use a constant (no stack alloc)
-	MOVQ SP, R15
-	ANDQ $0xFFFFFFFFFFFFFFE0, SP	// align 32 byte
-	SUBQ $32, SP
-	SUBQ $32, SP
-	VPXOR Y0, Y0, Y0
-	VMOVDQA Y0, 0(SP)
-	MOVL $1, SI
-	MOVL SI, 16(SP)
-	VMOVDQA 0(SP), Y0
-	MOVL $2, SI
-	MOVL SI, 0(SP)
-	MOVL SI, 16(SP)
-	VMOVDQA 0(SP), Y14
-	MOVQ R15, SP
+	VMOVDQA one<>(SB), Y0	
+	VPERM2I128 $0x33, Y0, Y14, Y14 // (1,0,1,0)
+	VPADDQ Y14, Y14, Y14	// (2,0,2,0)	
 	
 	BROADCASTI128(0(AX), Y8) 
 	BROADCASTI128(16(AX), Y9)
