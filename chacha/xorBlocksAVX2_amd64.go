@@ -6,7 +6,9 @@
 
 package chacha
 
-var useAVX2 = supportAVX2() == 1
+func init() {
+	useAVX2 = supportAVX2() == 1
+}
 
 // xorBlocks crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
 // dst using the state. Src and dst may be the same slice but otherwise should not

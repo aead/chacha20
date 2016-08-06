@@ -7,8 +7,116 @@ package chacha
 import (
 	"bytes"
 	"encoding/hex"
+	"runtime"
+	"strings"
 	"testing"
 )
+
+var testFuncs = map[string]func(*testing.T){
+	"TestCore":         TestCore,
+	"TestXorBlocks":    TestXorBlocks,
+	"TestXORKeyStream": TestXORKeyStream,
+}
+
+func TestSSE2(t *testing.T) {
+	SSSE3 := useSSSE3
+	AVX2 := useAVX2
+	useSSSE3, AVX2 = false, false
+	for _, v := range testFuncs {
+		v(t)
+	}
+	useSSSE3, useAVX2 = SSSE3, AVX2
+}
+
+func TestSSSE3(t *testing.T) {
+	if !useSSSE3 {
+		t.Log("CPU does not support SSSE3 - cannot test SSSE3")
+	}
+	AVX2 := useAVX2
+	AVX2 = false
+	for _, v := range testFuncs {
+		v(t)
+	}
+	useAVX2 = AVX2
+}
+
+func TestAVX2(t *testing.T) {
+	if !useAVX2 {
+		t.Log("CPU does not support AVX2 - cannot test AVX2")
+	}
+	if v := runtime.Version(); !strings.HasPrefix(v, "go1.7") {
+		t.Logf("Go version: %s < go1.7 - cannot test AVX2", v)
+	}
+	// if useAVX2 && version >= 1.7 -> AVX2 is always used.
+}
+
+func fromHex(s string) []byte {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+var coreTestVectors = []struct {
+	key, nonce string
+	counter    uint32
+	keystream  string
+	rounds     int
+}{
+	{
+		key:   "0000000000000000000000000000000000000000000000000000000000000000",
+		nonce: "000000000000000000000000",
+		keystream: "76b8e0ada0f13d90405d6ae55386bd28bdd219b8a08ded1aa836efcc8b770dc7" +
+			"da41597c5157488d7724e03fb8d84a376a43b8f41518a11cc387b669b2ee6586",
+		counter: 0,
+		rounds:  20,
+	},
+	{
+		key:   "0100000000000000000000000000000000000000000000000000000000000000",
+		nonce: "000000000000000000000000",
+		keystream: "c5d30a7ce1ec119378c84f487d775a8542f13ece238a9455e8229e888de85bbd" +
+			"29eb63d0a17a5b999b52da22be4023eb07620a54f6fa6ad8737b71eb0464dac0",
+		counter: 0,
+		rounds:  20,
+	},
+	{
+		key:   "0000000000000000000000000000000000000000000000000000000000000000",
+		nonce: "000000000100000000000000",
+		keystream: "ef3fdfd6c61578fbf5cf35bd3dd33b8009631634d21e42ac33960bd138e50d32" +
+			"111e4caf237ee53ca8ad6426194a88545ddc497a0b466e7d6bbdb0041b2f586b",
+		counter: 0,
+		rounds:  20,
+	},
+	{
+		key:   "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+		nonce: "00000000ffffffffffffffff",
+		keystream: "d9bf3f6bce6ed0b54254557767fb57443dd4778911b606055c39cc25e674b836" +
+			"3feabc57fde54f790c52c8ae43240b79d49042b777bfd6cb80e931270b7f50eb",
+		counter: 0,
+		rounds:  20,
+	},
+}
+
+func TestCore(t *testing.T) {
+	var (
+		key        [32]byte
+		nonce      [12]byte
+		state, dst [64]byte
+	)
+
+	for i, v := range coreTestVectors {
+		copy(key[:], fromHex(v.key))
+		copy(nonce[:], fromHex(v.nonce))
+
+		setState(&state, &key, &nonce, v.counter)
+
+		Core(&dst, &state, v.rounds)
+		if stream := fromHex(v.keystream); !bytes.Equal(dst[:], stream) {
+			t.Fatal("Test vector %d: Core computes unexpected keystream\nFound: %s\nExpected: %s", i, hex.EncodeToString(dst[:]), hex.EncodeToString(stream))
+		}
+	}
+}
 
 var recFail = func(t *testing.T, msg string) {
 	if err := recover(); err == nil {
@@ -132,12 +240,13 @@ func testXORBlocks(t *testing.T, size int) {
 		key[2*i] = byte(i)
 	}
 
-	var dst0, src0 [64]byte
+	var dst0, state [64]byte
 	dst1, src1 := make([]byte, size), make([]byte, size)
 
 	XORKeyStream(dst1, src1, &nonce, &key, 0, 20)
 	for i := 0; i < size; i += 64 {
-		XORKeyStream(dst0[:], src0[:], &nonce, &key, uint32(i/64), 20)
+		setState(&state, &key, &nonce, uint32(i/64))
+		Core(&dst0, &state, 20)
 		if !bytes.Equal(dst0[:], dst1[i:i+64]) {
 			t.Fatalf("Index %d Size: %d: XORKeyStream produce unexpected keystream", i, size)
 		}

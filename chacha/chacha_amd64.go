@@ -9,6 +9,7 @@ package chacha
 import "unsafe"
 
 var useSSSE3 = supportSSSE3()
+var useAVX2 bool
 
 // Core generates 64 byte keystream from the given state performing 'rounds' rounds
 // and writes them to dst. This function expects valid values. (no nil ptr etc.)
