@@ -9,6 +9,7 @@ package chacha
 import (
 	"runtime"
 	"strings"
+	"testing"
 )
 
 var testFuncs = map[string]func(*testing.T){
