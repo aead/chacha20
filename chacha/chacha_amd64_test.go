@@ -6,6 +6,11 @@
 
 package chacha
 
+import (
+	"runtime"
+	"strings"
+)
+
 var testFuncs = map[string]func(*testing.T){
 	"TestCore":         TestCore,
 	"TestXorBlocks":    TestXorBlocks,

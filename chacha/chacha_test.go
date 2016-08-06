@@ -7,8 +7,6 @@ package chacha
 import (
 	"bytes"
 	"encoding/hex"
-	"runtime"
-	"strings"
 	"testing"
 )
 
