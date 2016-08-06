@@ -24,14 +24,6 @@ DATA rol8<>+0x00(SB)/8, $0x0605040702010003
 DATA rol8<>+0x08(SB)/8, $0x0E0D0C0F0A09080B
 GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 
-// func cpuid() (cx uint32)
-TEXT ·cpuid(SB),7,$0
-	XORQ CX, CX
-	MOVL $1, AX
-	CPUID
-	MOVL CX, cx+0(FP)
-	RET
-
 // On SSE2
 #define ROTL_SSE2(n, t, v) \
  	MOVO v, t; \
@@ -648,6 +640,14 @@ BYTES_BETWEEN_0_AND_127:
 	PADDQ X15, X3
 DONE:
 	MOVO X3, 48(AX)
+	RET
+
+// func cpuid() (cx uint32)
+TEXT ·cpuid(SB),4,$0-4
+	XORQ CX, CX
+	MOVL $1, AX
+	CPUID
+	MOVL CX, cx+0(FP)
 	RET
 
 // func setState(state *[64]byte, key *[32]byte, nonce *[12]byte, counter uint32)
