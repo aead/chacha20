@@ -21,7 +21,7 @@ var testFuncs = map[string]func(*testing.T){
 func TestSSE2(t *testing.T) {
 	SSSE3 := useSSSE3
 	AVX2 := useAVX2
-	useSSSE3, AVX2 = false, false
+	useSSSE3, useAVX2 = false, false
 	for _, v := range testFuncs {
 		v(t)
 	}
@@ -33,7 +33,7 @@ func TestSSSE3(t *testing.T) {
 		t.Log("CPU does not support SSSE3 - cannot test SSSE3")
 	}
 	AVX2 := useAVX2
-	AVX2 = false
+	useAVX2 = false
 	for _, v := range testFuncs {
 		v(t)
 	}
