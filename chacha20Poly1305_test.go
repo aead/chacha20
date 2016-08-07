@@ -6,22 +6,16 @@ package chacha20
 
 import "testing"
 
-var recFunc = func(t *testing.T, msg string) {
-	if recover() == nil {
-		t.Fatalf("Expected error: %s", msg)
-	}
-}
-
 func TestNewChaCha20Poly1305WithTagSize(t *testing.T) {
 	var key [32]byte
 	_, err := NewChaCha20Poly1305WithTagSize(&key, 0)
 	if err == nil {
-		t.Fatalf("NewChaCha20Poly1305WithTagSize accepted invalid tagsize: %d", 0)
+		t.Errorf("NewChaCha20Poly1305WithTagSize accepted invalid tagsize: %d", 0)
 	}
 
 	_, err = NewChaCha20Poly1305WithTagSize(&key, 17)
 	if err == nil {
-		t.Fatalf("NewChaCha20Poly1305WithTagSize accepted invalid tagsize: %d", 0)
+		t.Errorf("NewChaCha20Poly1305WithTagSize accepted invalid tagsize: %d", 0)
 	}
 }
 
@@ -30,15 +24,15 @@ func TestOverhead(t *testing.T) {
 	c := NewChaCha20Poly1305(&key)
 
 	if o := c.Overhead(); o != TagSize {
-		t.Fatalf("Expected %d but Overhead() returned %d", TagSize, o)
+		t.Errorf("Expected %d but Overhead() returned %d", TagSize, o)
 	}
 
 	c, err := NewChaCha20Poly1305WithTagSize(&key, 12)
 	if err != nil {
-		t.Fatalf("Failed to create ChaCha20Poly1305 instance: %s", err)
+		t.Errorf("Failed to create ChaCha20Poly1305 instance: %s", err)
 	}
 	if o := c.Overhead(); o != 12 {
-		t.Fatalf("Expected %d but Overhead() returned %d", 12, o)
+		t.Errorf("Expected %d but Overhead() returned %d", 12, o)
 	}
 }
 
@@ -46,7 +40,7 @@ func TestNonceSize(t *testing.T) {
 	var key [32]byte
 	c := NewChaCha20Poly1305(&key)
 	if n := c.NonceSize(); n != NonceSize {
-		t.Fatalf("Expected %d but NonceSize() returned %d", TagSize, n)
+		t.Errorf("Expected %d but NonceSize() returned %d", TagSize, n)
 	}
 }
 
@@ -59,13 +53,16 @@ func TestSeal(t *testing.T) {
 		src   [64]byte
 		dst   [64 + TagSize]byte
 	)
-
-	mustFail := func(msg string, dst, nonce, src []byte) {
-		defer recFunc(t, msg)
-		c.Seal(dst[:0], nonce, src, nil)
+	mustFail := func(t *testing.T, f func(), err string) {
+		defer func() {
+			if recover() == nil {
+				t.Errorf("Function expected to fail: Expected: %s", err)
+			}
+		}()
+		f()
 	}
 
-	mustFail("nonce size is invalid", dst[:], nonce[:NonceSize-1], src[:])
+	mustFail(t, func() { c.Seal(dst[:0], nonce[:NonceSize-1], src[:], nil) }, "nonce size invalid")
 }
 
 func TestOpen(t *testing.T) {
@@ -80,22 +77,22 @@ func TestOpen(t *testing.T) {
 
 	_, err := c.Open(dst[:], nonce[:NonceSize-1], src[:], nil)
 	if err == nil {
-		t.Fatal("Open() accepted invalid nonce size")
+		t.Error("Open() accepted invalid nonce size")
 	}
 
 	_, err = c.Open(dst[:], nonce[:], src[:TagSize-1], nil)
 	if err == nil {
-		t.Fatal("Open() accepted invalid ciphertext length")
+		t.Error("Open() accepted invalid ciphertext length")
 	}
 
 	_, err = c.Open(dst[:], nonce[:], src[:TagSize-1], nil)
 	if err == nil {
-		t.Fatal("Open() accepted invalid ciphertext length")
+		t.Error("Open() accepted invalid ciphertext length")
 	}
 
 	_, err = c.Open(dst[:len(src)-TagSize-1], nonce[:], src[:], nil)
 	if err == nil {
-		t.Fatal("Open() accepted invalid dst length")
+		t.Error("Open() accepted invalid dst length")
 	}
 
 	// Check tag verification
@@ -104,7 +101,7 @@ func TestOpen(t *testing.T) {
 
 	_, err = c.Open(src[:], nonce[:], dst[:], nil)
 	if err == nil {
-		t.Fatal("Open() accepted invalid auth. tag")
+		t.Error("Open() accepted invalid auth. tag")
 	}
 }
 

@@ -6,56 +6,16 @@ package chacha
 
 import (
 	"bytes"
-	"encoding/hex"
 	"testing"
 )
 
-func fromHex(s string) []byte {
-	b, err := hex.DecodeString(s)
-	if err != nil {
-		panic(err)
-	}
-	return b
-}
-
-var coreTestVectors = []struct {
-	key, nonce string
-	counter    uint32
-	keystream  string
-	rounds     int
-}{
-	{
-		key:   "0000000000000000000000000000000000000000000000000000000000000000",
-		nonce: "000000000000000000000000",
-		keystream: "76b8e0ada0f13d90405d6ae55386bd28bdd219b8a08ded1aa836efcc8b770dc7" +
-			"da41597c5157488d7724e03fb8d84a376a43b8f41518a11cc387b669b2ee6586",
-		counter: 0,
-		rounds:  20,
-	},
-	{
-		key:   "0100000000000000000000000000000000000000000000000000000000000000",
-		nonce: "000000000000000000000000",
-		keystream: "c5d30a7ce1ec119378c84f487d775a8542f13ece238a9455e8229e888de85bbd" +
-			"29eb63d0a17a5b999b52da22be4023eb07620a54f6fa6ad8737b71eb0464dac0",
-		counter: 0,
-		rounds:  20,
-	},
-	{
-		key:   "0000000000000000000000000000000000000000000000000000000000000000",
-		nonce: "000000000100000000000000",
-		keystream: "ef3fdfd6c61578fbf5cf35bd3dd33b8009631634d21e42ac33960bd138e50d32" +
-			"111e4caf237ee53ca8ad6426194a88545ddc497a0b466e7d6bbdb0041b2f586b",
-		counter: 0,
-		rounds:  20,
-	},
-	{
-		key:   "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-		nonce: "00000000ffffffffffffffff",
-		keystream: "d9bf3f6bce6ed0b54254557767fb57443dd4778911b606055c39cc25e674b836" +
-			"3feabc57fde54f790c52c8ae43240b79d49042b777bfd6cb80e931270b7f50eb",
-		counter: 0,
-		rounds:  20,
-	},
+var mustFail = func(t *testing.T, f func(), err string) {
+	defer func() {
+		if recover() == nil {
+			t.Errorf("Function expected to fail: Expected: %s", err)
+		}
+	}()
+	f()
 }
 
 func TestCore(t *testing.T) {
@@ -73,29 +33,17 @@ func TestCore(t *testing.T) {
 
 		Core(&dst, &state, v.rounds)
 		if stream := fromHex(v.keystream); !bytes.Equal(dst[:], stream) {
-			t.Fatal("Test vector %d: Core computes unexpected keystream\nFound: %s\nExpected: %s", i, hex.EncodeToString(dst[:]), hex.EncodeToString(stream))
+			t.Fatalf("Test vector %d: Core computes unexpected keystream\nFound: %s\nExpected: %s", i, toHex(dst[:]), toHex(stream))
 		}
 	}
 }
 
-var recFail = func(t *testing.T, msg string) {
-	if err := recover(); err == nil {
-		t.Fatalf("Expected error: %s", msg)
-	}
-}
-
 func TestNewCipher(t *testing.T) {
-	mustFail := func(t *testing.T, msg string, nonce *[12]byte, key *[32]byte, rounds int) {
-		defer recFail(t, msg)
-		NewCipher(nonce, key, rounds)
-	}
-
 	key := new([32]byte)
 	nonce := new([12]byte)
 
-	mustFail(t, "rounds is 0", nonce, key, 0)
-
-	mustFail(t, "rounds is not even", nonce, key, 21)
+	mustFail(t, func() { NewCipher(nonce, key, 0) }, "rounds is 0")
+	mustFail(t, func() { NewCipher(nonce, key, 21) }, "rounds is not even")
 }
 
 func TestSetCounter(t *testing.T) {
@@ -115,7 +63,7 @@ func TestSetCounter(t *testing.T) {
 	XORKeyStream(buf1[1:], buf1[1:], &nonce, &key, 20, 20)
 
 	if !bytes.Equal(buf0, buf1) {
-		t.Fatalf("XORKeyStream differ from chacha.XORKeyStream\n XORKeyStream: %s \n chacha.XORKeyStream: %s", hex.EncodeToString(buf1), hex.EncodeToString(buf0))
+		t.Fatalf("XORKeyStream differ from chacha.XORKeyStream\n XORKeyStream: %s \n chacha.XORKeyStream: %s", toHex(buf1), toHex(buf0))
 	}
 }
 
@@ -139,7 +87,7 @@ func TestSetNonce(t *testing.T) {
 	XORKeyStream(buf1[1:], buf1[1:], &nonce, &key, 1, 20)
 
 	if !bytes.Equal(buf0, buf1) {
-		t.Fatalf("XORKeyStream differ from chacha.XORKeyStream\n XORKeyStream: %s \n chacha.XORKeyStream: %s", hex.EncodeToString(buf1), hex.EncodeToString(buf0))
+		t.Fatalf("XORKeyStream differ from chacha.XORKeyStream\n XORKeyStream: %s \n chacha.XORKeyStream: %s", toHex(buf1), toHex(buf0))
 	}
 }
 
@@ -161,38 +109,25 @@ func TestXORKeyStream(t *testing.T) {
 	XORKeyStream(buf1, buf1, &nonce, &key, 0, 20)
 
 	if !bytes.Equal(buf0, buf1) {
-		t.Fatalf("XORKeyStream differ from chacha.XORKeyStream\n XORKeyStream: %s \n chacha.XORKeyStream: %s", hex.EncodeToString(buf1), hex.EncodeToString(buf0))
+		t.Fatalf("XORKeyStream differ from chacha.XORKeyStream\n XORKeyStream: %s \n chacha.XORKeyStream: %s", toHex(buf1), toHex(buf0))
 	}
 }
 
 func TestXORKeyStreamPanic(t *testing.T) {
-	mustFail := func(t *testing.T, msg string, dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint32, rounds int) {
-		defer recFail(t, msg)
-		XORKeyStream(dst, src, nonce, key, counter, rounds)
-	}
-
 	key := new([32]byte)
 	nonce := new([12]byte)
 	src, dst := make([]byte, 65), make([]byte, 65)
 
-	mustFail(t, "rounds is 0", dst, src, nonce, key, 0, 0)
-
-	mustFail(t, "rounds is not even", dst, src, nonce, key, 0, 21)
-
-	mustFail(t, "len(dst) < len(src)", dst[:len(src)-1], src, nonce, key, 0, 20)
+	mustFail(t, func() { XORKeyStream(dst, src, nonce, key, 0, 0) }, "rounds is 0")
+	mustFail(t, func() { XORKeyStream(dst, src, nonce, key, 0, 21) }, "rounds is not even")
+	mustFail(t, func() { XORKeyStream(dst[:len(src)-1], src, nonce, key, 0, 21) }, "len(dst) < len(src)")
 
 	c := NewCipher(nonce, key, 20)
 
-	mustFail2 := func(t *testing.T, msg string, dst, src []byte) {
-		defer recFail(t, msg)
-		c.XORKeyStream(dst, src)
-	}
-
-	mustFail2(t, "len(dst) < len(src)", dst[:len(src)-1], src)
-
+	mustFail(t, func() { c.XORKeyStream(dst[:len(src)-1], src) }, "len(dst) < len(src)")
 }
 
-func testXORBlocks(t *testing.T, size int) {
+func testXorBlocks(t *testing.T, size int) {
 	var key [32]byte
 	var nonce [12]byte
 	for i := range nonce {
@@ -214,13 +149,13 @@ func testXORBlocks(t *testing.T, size int) {
 }
 
 func TestXorBlocks(t *testing.T) {
-	testXORBlocks(t, 64)
-	testXORBlocks(t, 128)
-	testXORBlocks(t, 192)
-	testXORBlocks(t, 256)
-	testXORBlocks(t, 320)
-	testXORBlocks(t, 384)
-	testXORBlocks(t, 448)
-	testXORBlocks(t, 512)
-	testXORBlocks(t, 1024)
+	testXorBlocks(t, 64)
+	testXorBlocks(t, 128)
+	testXorBlocks(t, 192)
+	testXorBlocks(t, 256)
+	testXorBlocks(t, 320)
+	testXorBlocks(t, 384)
+	testXorBlocks(t, 448)
+	testXorBlocks(t, 512)
+	testXorBlocks(t, 1024)
 }
