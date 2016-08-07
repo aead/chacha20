@@ -54,7 +54,7 @@ type Cipher struct {
 	rounds       int
 }
 
-// Sets the counter of the cipher.
+// SetCounter sets the counter of the cipher.
 // This function skips the unused keystream of the current 64 byte block.
 func (c *Cipher) SetCounter(ctr uint32) {
 	c.state[48] = byte(ctr)
@@ -64,7 +64,7 @@ func (c *Cipher) SetCounter(ctr uint32) {
 	c.off = 0
 }
 
-// Sets the nonce of the cipher.
+// SetNonce sets the nonce of the cipher.
 // This function skips the unused keystream of the current 64 byte block.
 func (c *Cipher) SetNonce(nonce *[12]byte) {
 	copy(c.state[52:], nonce[:])
