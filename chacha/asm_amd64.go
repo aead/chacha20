@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
-// This file declares all functions (implemented in assembly), neccessery for amd64 systems.
+// This file declares all functions (implemented in assembly), necessary for amd64 systems.
 
 package chacha
 

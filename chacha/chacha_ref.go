@@ -16,9 +16,12 @@ var constants = [16]byte{
 }
 
 // Core generates 64 byte keystream from the given state performing 'rounds' rounds
-// and writes them to dst. This function expects valid values. (no nil ptr etc.)
-// Core increments the counter of the state.
+// and writes them to dst. Valid values for 'rounds' are 8, 12, or 20. Core increments
+// the counter of state.
 func Core(dst *[64]byte, state *[64]byte, rounds int) {
+	if rounds != 20 && rounds != 12 && rounds != 8 {
+		panic("chacha20/chacha: rounds must be a 8, 12, or 20")
+	}
 	v00 := uint32(state[0]) | (uint32(state[1]) << 8) | (uint32(state[2]) << 16) | (uint32(state[3]) << 24)
 	v01 := uint32(state[4]) | (uint32(state[5]) << 8) | (uint32(state[6]) << 16) | (uint32(state[7]) << 24)
 	v02 := uint32(state[8]) | (uint32(state[9]) << 8) | (uint32(state[10]) << 16) | (uint32(state[11]) << 24)

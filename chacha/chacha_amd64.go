@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
-// This file defines all non-assembly functions, neccessery for amd64 systems.
+// This file defines all non-assembly functions, necessary for amd64 systems.
 
 package chacha
 
@@ -12,9 +12,12 @@ var useSSSE3 = supportSSSE3()
 var useAVX2 bool
 
 // Core generates 64 byte keystream from the given state performing 'rounds' rounds
-// and writes them to dst. This function expects valid values. (no nil ptr etc.)
-// Core increments the counter of state.
+// and writes them to dst. Valid values for 'rounds' are 8, 12, or 20. Core increments
+// the counter of state.
 func Core(dst *[64]byte, state *[64]byte, rounds int) {
+	if rounds != 20 && rounds != 12 && rounds != 8 {
+		panic("chacha20/chacha: rounds must be a 8, 12, or 20")
+	}
 	if useSSSE3 {
 		coreSSSE3(dst, state, rounds)
 	} else {

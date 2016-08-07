@@ -6,11 +6,11 @@
 // ChaCha cipher family.
 package chacha // import "github.com/aead/chacha20/chacha"
 
-// NewCipher returns a new *chacha.Cipher implementing the ChaCha/X (X = even number of rounds)
+// NewCipher returns a new *chacha.Cipher implementing the ChaCha/X (X = 8, 12 or 20)
 // stream cipher. The nonce must be unique for one key for all time.
 func NewCipher(nonce *[12]byte, key *[32]byte, rounds int) *Cipher {
-	if rounds <= 0 || rounds%2 != 0 {
-		panic("chacha20/chacha: rounds must be a multiply of 2")
+	if rounds != 20 && rounds != 12 && rounds != 8 {
+		panic("chacha20/chacha: rounds must be a 8, 12, or 20")
 	}
 	c := new(Cipher)
 	c.rounds = rounds
@@ -20,16 +20,16 @@ func NewCipher(nonce *[12]byte, key *[32]byte, rounds int) *Cipher {
 }
 
 // XORKeyStream crypts bytes from src to dst using the given key, nonce and counter.
-// The rounds argument specifies the number of rounds (must be even) performed for
-// keystream generation. (Common values are 20, 12 or 8) Src and dst may be the same
+// The rounds argument specifies the number of rounds performed for keystream
+// generation. (The values 8, 12 or 20 are legal) Src and dst may be the same
 // slice but otherwise should not overlap. If len(dst) < len(src) this function panics.
 func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint32, rounds int) {
 	length := len(src)
 	if len(dst) < length {
 		panic("chacha20/chacha: dst buffer is to small")
 	}
-	if rounds <= 0 || rounds%2 != 0 {
-		panic("chacha20/chacha: rounds must be a multiple of 2")
+	if rounds != 20 && rounds != 12 && rounds != 8 {
+		panic("chacha20/chacha: rounds must be a 8, 12, or 20")
 	}
 
 	var state [64]byte
