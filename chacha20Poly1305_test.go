@@ -4,7 +4,10 @@
 
 package chacha20
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestNewChaCha20Poly1305WithTagSize(t *testing.T) {
 	var key [32]byte
@@ -103,6 +106,46 @@ func TestOpen(t *testing.T) {
 	if err == nil {
 		t.Error("Open() accepted invalid auth. tag")
 	}
+}
+
+// Examples
+
+func ExampleSeal() {
+	var secretKey [32]byte           // The secret 256 bit key - may derived from a password
+	nonce := make([]byte, NonceSize) // The more or less random nonce - only used once for all time.
+
+	plaintext := []byte("My secret diary: ...")        // The plaintext for encryption
+	ciphertext := make([]byte, len(plaintext)+TagSize) // The +Tagsize avoids slice allocs - See cipher.AEAD
+	addData := []byte("Send at 12.00")                 // Some meta data, not encrypted, but authenticated
+
+	aead := NewChaCha20Poly1305(&secretKey)
+	ciphertext = aead.Seal(ciphertext[:0], nonce, plaintext, addData)
+
+	// now ciphertext holds the encrypted plaintext + the 16 byte authentication tag.
+	fmt.Println(toHex(ciphertext))
+	// Output: d27ec7cd30324a1fec9af315125f7137eb21078e1ff6ecc613a998b05f067131c7e8b145
+}
+
+func ExampleOpen() {
+	var secretKey [32]byte           // The secret 256 bit key - may derived from a password
+	nonce := make([]byte, NonceSize) // The more or less random nonce - only used once for all time.
+
+	plaintext := []byte("My secret diary: ...")        // The plaintext for encryption
+	ciphertext := make([]byte, len(plaintext)+TagSize) // The +Tagsize avoids slice allocs - See cipher.AEAD
+	addData := []byte("Send at 12.00")                 // Some meta data, not encrypted, but authenticated
+
+	aead := NewChaCha20Poly1305(&secretKey)
+	ciphertext = aead.Seal(ciphertext[:0], nonce, plaintext, addData)
+
+	// now ciphertext holds the encrypted plaintext + the 16 byte authentication tag.
+
+	plaintext, err := aead.Open(plaintext[:0], nonce, ciphertext, addData)
+	if err != nil {
+		fmt.Printf("Something went wrong: %s", err)
+		return
+	}
+	fmt.Println(string(plaintext))
+	// Output: My secret diary: ...
 }
 
 // Benchmarks
