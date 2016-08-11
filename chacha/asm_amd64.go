@@ -24,10 +24,10 @@ func xorBlocksSSE2(dst, src []byte, state *[64]byte, rounds int)
 //go:noescape
 func xorBlocksSSSE3(dst, src []byte, state *[64]byte, rounds int)
 
-// coreSSE2 generates 64 byte keystream from the given state performing 'rounds' rounds
-// and writes them to dst.
+// coreSSE2 generates 64 byte keystream from the given state performing the
+// provided number of rounds and writes them to dst.
 func coreSSE2(dst *[64]byte, state *[64]byte, rounds int)
 
-// coreSSSE3 generates 64 byte keystream from the given state performing 'rounds' rounds
-// and writes them to dst.
+// coreSSSE3 generates 64 byte keystream from the given state performing the
+// provided number of rounds and writes them to dst.
 func coreSSSE3(dst *[64]byte, state *[64]byte, rounds int)
