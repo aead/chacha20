@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
-// This file defines all non-assembly functions, necessary for amd64 systems.
+// +build amd64, !gccgo, !appengine
 
 package chacha
 
@@ -44,6 +44,7 @@ func xor(dst, src, with []byte) int {
 		}
 	}
 
+	// n & (^(8 - 1))   equal to   n - (n % 8) (on amd64 the wordsize is 8)
 	for i := (n & (^(8 - 1))); i < n; i++ {
 		dst[i] = src[i] ^ with[i]
 	}
@@ -52,7 +53,27 @@ func xor(dst, src, with []byte) int {
 }
 
 // supportSSSE3 returns true if the runtime (the executing machine) supports SSSE3.
-func supportSSSE3() bool {
-	cx := cpuid()
-	return ((cx & 1) != 0) && ((cx & 0x200) != 0) // return SSE3 && SSSE3
-}
+//go:noescape
+func supportSSSE3() bool
+
+// setState builds the ChaCha state from the key, the nonce and the counter.
+//go:noescape
+func setState(state *[64]byte, key *[32]byte, nonce *[12]byte, counter uint32)
+
+// xorBlocksSSE2 crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
+// dst using the state.
+//go:noescape
+func xorBlocksSSE2(dst, src []byte, state *[64]byte, rounds int)
+
+// xorBlocksSSSE3 crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
+// dst using the state.
+//go:noescape
+func xorBlocksSSSE3(dst, src []byte, state *[64]byte, rounds int)
+
+// coreSSE2 generates 64 byte keystream from the given state performing 'rounds' rounds
+// and writes them to dst.
+func coreSSE2(dst *[64]byte, state *[64]byte, rounds int)
+
+// coreSSSE3 generates 64 byte keystream from the given state performing 'rounds' rounds
+// and writes them to dst.
+func coreSSSE3(dst *[64]byte, state *[64]byte, rounds int)

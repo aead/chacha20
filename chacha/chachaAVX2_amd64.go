@@ -3,11 +3,12 @@
 // found in the LICENSE file.
 
 // +build go1.7
+// +build amd64, !gccgo, !appengine
 
 package chacha
 
 func init() {
-	useAVX2 = supportAVX2() == 1
+	useAVX2 = supportAVX2()
 }
 
 // xorBlocks crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
@@ -25,7 +26,7 @@ func xorBlocks(dst, src []byte, state *[64]byte, rounds int) {
 
 // supportAVX2 returns 1 if the runtime (the executing machine) supports AVX2.
 //go:noescape
-func supportAVX2() int
+func supportAVX2() bool
 
 // xorBlocksAVX2 crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
 // dst using the state.

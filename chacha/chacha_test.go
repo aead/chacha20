@@ -6,8 +6,13 @@ package chacha
 
 import (
 	"bytes"
+	"encoding/hex"
 	"testing"
 )
+
+func toHex(b []byte) string {
+	return hex.EncodeToString(b)
+}
 
 var mustFail = func(t *testing.T, f func(), err string) {
 	defer func() {
@@ -18,32 +23,40 @@ var mustFail = func(t *testing.T, f func(), err string) {
 	f()
 }
 
-func TestCore(t *testing.T) {
-	var (
-		key        [32]byte
-		nonce      [12]byte
-		state, dst [64]byte
-	)
+func testCore(t *testing.T, n int) {
+	var rounds = []int{8, 12, 20}
+	var key [32]byte
+	var nonce [12]byte
 
-	for i, v := range coreTestVectors {
-		copy(key[:], fromHex(v.key))
-		copy(nonce[:], fromHex(v.nonce))
+	for i := range key {
+		key[i] = byte(i) ^ byte(n)
+		nonce[i%12] += byte(n) + byte(i)
+	}
 
-		setState(&state, &key, &nonce, v.counter)
+	var dst0, dst1, state0, state1 [64]byte
+	setState(&state0, &key, &nonce, 0)
+	setState(&state1, &key, &nonce, 0)
 
-		Core(&dst, &state, v.rounds)
-		if stream := fromHex(v.keystream); !bytes.Equal(dst[:], stream) {
-			t.Fatalf("Test vector %d: Core computes unexpected keystream\nFound: %s\nExpected: %s", i, toHex(dst[:]), toHex(stream))
+	for _, r := range rounds {
+		for i := 0; i < n; i++ {
+			Core(&dst0, &state0, r)
+			core(&dst1, &state1, r)
+			if !bytes.Equal(dst0[:], dst1[:]) {
+				t.Fatalf("Rounds: %d - Iteration %d: Core differs from generic core:\nCore dst: %s\ncore dst: %s", r, i, toHex(dst0[:]), toHex(dst1[:]))
+			}
+			if !bytes.Equal(state0[:], state1[:]) {
+				t.Fatalf("Rounds: %d - Iteration %d: Core differs from generic core:\nCore state: %s\ncore state: %s", r, i, toHex(state0[:]), toHex(state1[:]))
+			}
 		}
 	}
 }
 
-func TestNewCipher(t *testing.T) {
-	key := new([32]byte)
-	nonce := new([12]byte)
-
-	mustFail(t, func() { NewCipher(nonce, key, 0) }, "rounds is 0")
-	mustFail(t, func() { NewCipher(nonce, key, 21) }, "rounds is not even")
+func TestCore(t *testing.T) {
+	testCore(t, 1)
+	testCore(t, 2)
+	testCore(t, 4)
+	testCore(t, 8)
+	testCore(t, 16)
 }
 
 func TestSetCounter(t *testing.T) {
@@ -113,37 +126,28 @@ func TestXORKeyStream(t *testing.T) {
 	}
 }
 
-func TestXORKeyStreamPanic(t *testing.T) {
-	key := new([32]byte)
-	nonce := new([12]byte)
-	src, dst := make([]byte, 65), make([]byte, 65)
-
-	mustFail(t, func() { XORKeyStream(dst, src, nonce, key, 0, 0) }, "rounds is 0")
-	mustFail(t, func() { XORKeyStream(dst, src, nonce, key, 0, 21) }, "rounds is not even")
-	mustFail(t, func() { XORKeyStream(dst[:len(src)-1], src, nonce, key, 0, 21) }, "len(dst) < len(src)")
-
-	c := NewCipher(nonce, key, 20)
-
-	mustFail(t, func() { c.XORKeyStream(dst[:len(src)-1], src) }, "len(dst) < len(src)")
-}
-
 func testXorBlocks(t *testing.T, size int) {
+	var rounds = []int{8, 12, 20}
+
 	var key [32]byte
 	var nonce [12]byte
-	for i := range nonce {
-		nonce[i] = byte(i)
-		key[2*i] = byte(i)
+
+	for i := range key {
+		key[i] = byte(i) ^ byte(size)
+		nonce[i%12] += byte(size) + byte(i)
 	}
 
 	var dst0, state [64]byte
 	dst1, src1 := make([]byte, size), make([]byte, size)
 
-	XORKeyStream(dst1, src1, &nonce, &key, 0, 20)
-	for i := 0; i < size; i += 64 {
-		setState(&state, &key, &nonce, uint32(i/64))
-		Core(&dst0, &state, 20)
-		if !bytes.Equal(dst0[:], dst1[i:i+64]) {
-			t.Fatalf("Index %d Size: %d: XORKeyStream produce unexpected keystream", i, size)
+	for _, r := range rounds {
+		XORKeyStream(dst1, src1, &nonce, &key, 0, 20)
+		for i := 0; i < size; i += 64 {
+			setState(&state, &key, &nonce, uint32(i/64))
+			Core(&dst0, &state, 20)
+			if !bytes.Equal(dst0[:], dst1[i:i+64]) {
+				t.Fatalf("Rounds: %d - Index %d Size: %d: XORKeyStream produce unexpected keystream", r, i, size)
+			}
 		}
 	}
 }

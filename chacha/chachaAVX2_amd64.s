@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 // +build go1.7
+// +build amd64, !gccgo, !appengine
 
 #include "textflag.h"
 
@@ -24,16 +25,6 @@ DATA one<>+0x10(SB)/8, $0x1
 DATA one<>+0x18(SB)/8, $0x0
 GLOBL one<>(SB), (NOPTR+RODATA), $32
 
-// func supportAVX2() int
-TEXT ·supportAVX2(SB),4,$0-8
-	MOVQ $0, AX
-	CMPB runtime·support_avx2(SB), $1
-	JNE DONE
-	MOVQ $1, AX
-DONE:
-	MOVQ AX, ret+0(FP)
-	RET
-
 #define ROTL(n, v, t) \
 	VPSLLD $n, v, t; \
 	VPSRLD $(32-n), v, v; \
@@ -43,6 +34,7 @@ DONE:
 	VPSHUFB c, v, v
 
 // If src is a mem location, src must contain at least 32 bytes -> see xorBlocksAVX2
+// dst must not be a mem location!
 #define BROADCASTI128(src, dst) \
 	VPERM2I128 $0x22, src, dst, dst		// len(src) < 32 (e.g. state[48]) -> error!
 
@@ -121,14 +113,14 @@ TEXT ·xorBlocksAVX2(SB),4,$0-64
 	MOVQ dst_base+0(FP), CX
 	MOVQ src_base+24(FP), BX
 	MOVQ src_len+32(FP), DX
-	MOVQ rounds+56(FP), R8
+	MOVQ rounds+56(FP), BP
 	ANDQ $0xFFFFFFFFFFFFFFC0, DX	// DX = len(src) - (len(src) % 64)
 	
-	VMOVDQA one<>(SB), Y0	
+	VMOVDQU one<>(SB), Y0
 	VPERM2I128 $0x33, Y0, Y14, Y14 // (1,0,1,0)
-	VPADDQ Y14, Y14, Y14	// (2,0,2,0)	
+	VPADDQ Y14, Y14, Y14	// (2,0,2,0)
 	
-	BROADCASTI128(0(AX), Y8) 
+	BROADCASTI128(0(AX), Y8)
 	BROADCASTI128(16(AX), Y9)
 	BROADCASTI128(32(AX), Y10)
 	VPERM2I128 $0x33, 32(AX), Y11, Y11	// cannot use BROADCASTI128 -> 48(AX) contains only 16 bytes
@@ -144,7 +136,7 @@ BYTES_AT_LEAST_256:
 		VMOVDQA Y9, Y5
 		VMOVDQA Y10, Y6
 		VPADDQ Y11, Y14, Y7
-		MOVQ R8, R9
+		MOVQ BP, R9
 CHACHA_LOOP_256:
 			HALF_ROUND_256(Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y12)
 			SHUFFLE_256(Y1, Y5, Y2, Y6, Y3, Y7)
@@ -176,7 +168,7 @@ BYTES_LESS_THAN_255:
 		VMOVDQA Y9, Y1
 		VMOVDQA Y10, Y2
 		VMOVDQA Y11, Y3
-		MOVQ R8, R9
+		MOVQ BP, R9
 CHACHA_LOOP_128:
 			HALF_ROUND_128(Y0, Y1, Y2, Y3, Y12)
 			SHUFFLE_128(Y1, Y2, Y3)
@@ -214,5 +206,13 @@ CHACHA_LOOP_128:
 WRITE_ODD_64_BLOCKS:
 	VPERM2I128 $1, Y11, Y11, Y11
 WRITE_EVEN_64_BLOCKS:
+	VZEROUPPER
 	MOVO X11, 48(AX)
+	RET
+
+// func supportAVX2() bool
+TEXT ·supportAVX2(SB),4,$0-8
+	XORQ AX, AX
+	MOVQ runtime·support_avx2(SB), AX
+	MOVQ AX, ret+0(FP)
 	RET

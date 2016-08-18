@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
-// Package chacha implements some low level functions of the
+// Package chacha implements some low-level functions of the
 // ChaCha cipher family.
 package chacha // import "github.com/aead/chacha20/chacha"
 
@@ -46,8 +46,7 @@ func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint3
 	}
 }
 
-// Cipher is the ChaCha/X struct.
-// X is the number of rounds (e.g. ChaCha20 for 20 rounds)
+// Cipher implements ChaCha/X for a given number of rounds X.
 type Cipher struct {
 	state, block [64]byte
 	off          int
