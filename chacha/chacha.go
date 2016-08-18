@@ -21,8 +21,8 @@ func NewCipher(nonce *[12]byte, key *[32]byte, rounds int) *Cipher {
 
 // XORKeyStream crypts bytes from src to dst using the given key, nonce and counter.
 // The rounds argument specifies the number of rounds performed for keystream
-// generation. (The values 8, 12 or 20 are legal) Src and dst may be the same
-// slice but otherwise should not overlap. If len(dst) < len(src) this function panics.
+// generation - valid values are 8, 12 or 20. The src and dst may be the same slice
+// but otherwise should not overlap. If len(dst) < len(src) this function panics.
 func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint32, rounds int) {
 	length := len(src)
 	if len(dst) < length {
@@ -50,7 +50,7 @@ func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint3
 type Cipher struct {
 	state, block [64]byte
 	off          int
-	rounds       int
+	rounds       int // 20 for ChaCha20
 }
 
 // SetCounter sets the counter of the cipher.

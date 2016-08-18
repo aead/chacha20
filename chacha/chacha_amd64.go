@@ -11,9 +11,9 @@ import "unsafe"
 var useSSSE3 = supportSSSE3()
 var useAVX2 bool
 
-// Core generates 64 byte keystream from the given state performing 'rounds' rounds
-// and writes them to dst. Valid values for 'rounds' are 8, 12, or 20. Core increments
-// the counter of state.
+// Core generates 64 byte keystream from the given state performing the
+// provided number of rounds and writes them to dst. Valid values for
+// rounds are 8, 12, or 20. Core increments the counter of state.
 func Core(dst *[64]byte, state *[64]byte, rounds int) {
 	if rounds != 20 && rounds != 12 && rounds != 8 {
 		panic("chacha20/chacha: rounds must be a 8, 12, or 20")
