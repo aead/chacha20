@@ -3,8 +3,7 @@
 // found in the LICENSE file.
 
 // +build !go1.7
-
-// This file defines the xorBlocks function for all systems using Go 1.6.x.
+// +build amd64, !gccgo, !appengine
 
 package chacha
 

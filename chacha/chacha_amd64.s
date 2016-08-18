@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
-// This file implements all (assembly) functions, neccessery for amd64 systems.
+// +build amd64, !gccgo, !appengine
 
 #include "textflag.h"
 
@@ -24,14 +24,13 @@ DATA rol8<>+0x00(SB)/8, $0x0605040702010003
 DATA rol8<>+0x08(SB)/8, $0x0E0D0C0F0A09080B
 GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 
-// On SSE2
+
 #define ROTL_SSE2(n, t, v) \
  	MOVO v, t; \
 	PSLLL $n, t; \
 	PSRLL $(32-n), v; \
 	PXOR t, v
 
-// On SSSE3
 #define ROTL_SSSE3(c, v) \
 	PSHUFB c, v
 
@@ -342,7 +341,7 @@ TEXT ·xorBlocksSSE2(SB),4,$0-64
 	MOVQ dst_base+0(FP), BX
 	MOVQ src_base+24(FP), CX
 	MOVQ src_len+32(FP), DX
-	MOVQ rounds+56(FP), R8
+	MOVQ rounds+56(FP), BP
 	
 	CMPQ DX, $256
 	JB BYTES_BETWEEN_0_AND_255
@@ -372,7 +371,7 @@ BYTES_AT_LEAST_256:
 	MOVO X2, X14
 	MOVO X11, X15
 	PADDQ one<>(SB), X15
-	MOVQ R8, R9
+	MOVQ BP, R9
 	CHACHA_LOOP_256:
 		HALF_ROUND_256_SSE2(X0, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, 0(SP))
 		SHUFFLE_256(0x39, 0x4E, 0x93, X1, X5, X9, X13, X2, X6, X10, X14, X3, X7, X11, X15)
@@ -426,7 +425,7 @@ BYTES_BETWEEN_0_AND_255:
 	MOVO 16(AX), X1
 	MOVO 32(AX), X2
 	MOVO 48(AX), X3
-	MOVQ one<>(SB), X15
+	MOVOU one<>(SB), X15
 	CMPQ DX, $128
 	JB BYTES_BETWEEN_0_AND_127
 	
@@ -439,7 +438,7 @@ BYTES_BETWEEN_0_AND_255:
 	MOVO X2, X10
 	MOVO X3, X11
 	PADDQ X15, X11
-	MOVQ R8, R9
+	MOVQ BP, R9
 	CHACHA_LOOP_128:
 		HALF_ROUND_128_SSE2(X4, X5, X6, X7, X8, X9, X10, X11, X12)
 		SHUFFLE_128(0x39, 0x4E, 0x93, X5, X9, X6, X10, X7, X11)
@@ -471,7 +470,7 @@ BYTES_BETWEEN_0_AND_127:
 	MOVO X1, X5
 	MOVO X2, X6
 	MOVO X3, X7
-	MOVQ R8, R9
+	MOVQ BP, R9
 	CHACHA_LOOP_64:
 		HALF_ROUND_64_SSE2(X4, X5, X6, X7, X8)
 		SHUFFLE_64(0x39, 0x4E, 0x93, X5, X6, X7)
@@ -495,7 +494,7 @@ TEXT ·xorBlocksSSSE3(SB),4,$0-64
 	MOVQ dst_base+0(FP), BX
 	MOVQ src_base+24(FP), CX
 	MOVQ src_len+32(FP), DX
-	MOVQ rounds+56(FP), R8
+	MOVQ rounds+56(FP), BP
 	
 	CMPQ DX, $256
 	JB BYTES_BETWEEN_0_AND_255
@@ -525,7 +524,7 @@ BYTES_AT_LEAST_256:
 	MOVO X2, X14
 	MOVO X11, X15
 	PADDQ one<>(SB), X15
-	MOVQ R8, R9
+	MOVQ BP, R9
 	CHACHA_LOOP_256:
 		HALF_ROUND_256_SSSE3(X0, X1, X2, X3, X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14, X15, 0(SP))
 		SHUFFLE_256(0x39, 0x4E, 0x93, X1, X5, X9, X13, X2, X6, X10, X14, X3, X7, X11, X15)
@@ -579,7 +578,7 @@ BYTES_BETWEEN_0_AND_255:
 	MOVO 16(AX), X1
 	MOVO 32(AX), X2
 	MOVO 48(AX), X3
-	MOVQ one<>(SB), X15
+	MOVOU one<>(SB), X15
 	CMPQ DX, $128
 	JB BYTES_BETWEEN_0_AND_127
 	
@@ -592,7 +591,7 @@ BYTES_BETWEEN_0_AND_255:
 	MOVO X2, X10
 	MOVO X3, X11
 	PADDQ X15, X11
-	MOVQ R8, R9
+	MOVQ BP, R9
 	CHACHA_LOOP_128:
 		HALF_ROUND_128_SSSE3(X4, X5, X6, X7, X8, X9, X10, X11, X12)
 		SHUFFLE_128(0x39, 0x4E, 0x93, X5, X9, X6, X10, X7, X11)
@@ -624,7 +623,7 @@ BYTES_BETWEEN_0_AND_127:
 	MOVO X1, X5
 	MOVO X2, X6
 	MOVO X3, X7
-	MOVQ R8, R9
+	MOVQ BP, R9
 	CHACHA_LOOP_64:
 		HALF_ROUND_64_SSSE3(X4, X5, X6, X7, X8)
 		SHUFFLE_64(0x39, 0x4E, 0x93, X5, X6, X7)
@@ -642,12 +641,23 @@ DONE:
 	MOVO X3, 48(AX)
 	RET
 
-// func cpuid() (cx uint32)
-TEXT ·cpuid(SB),4,$0-4
+// func supportSSSE3() bool
+TEXT ·supportSSSE3(SB),4,$0-4
 	XORQ CX, CX
 	MOVL $1, AX
 	CPUID
-	MOVL CX, cx+0(FP)
+	MOVQ CX, BX
+	ANDL $0x1, BX	// BX != 0 if support SSE3
+	CMPL BX, $0
+	JE FALSE
+	ANDL $0x200, CX // CX != 0 if support SSSE3
+	CMPL CX, $0
+	JE FALSE
+	MOVQ $1, ret+0(FP)
+	JMP DONE
+FALSE:
+	MOVQ $0, ret+0(FP)
+DONE:
 	RET
 
 // func setState(state *[64]byte, key *[32]byte, nonce *[12]byte, counter uint32)
@@ -667,8 +677,8 @@ TEXT ·setState(SB),4,$0-28
 
 	MOVL DX, 48(AX)
 	
-	MOVL 0(CX), R8
-	MOVQ 4(CX), R9
-	MOVL R8, 52(AX)
-	MOVQ R9, 56(AX)
+	MOVL 0(CX), BP
+	MOVQ 4(CX), R8
+	MOVL BP, 52(AX)
+	MOVQ R8, 56(AX)
 	RET

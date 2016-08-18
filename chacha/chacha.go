@@ -2,7 +2,7 @@
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
-// Package chacha implements some low level functions of the
+// Package chacha implements some low-level functions of the
 // ChaCha cipher family.
 package chacha // import "github.com/aead/chacha20/chacha"
 
@@ -21,8 +21,8 @@ func NewCipher(nonce *[12]byte, key *[32]byte, rounds int) *Cipher {
 
 // XORKeyStream crypts bytes from src to dst using the given key, nonce and counter.
 // The rounds argument specifies the number of rounds performed for keystream
-// generation. (The values 8, 12 or 20 are legal) Src and dst may be the same
-// slice but otherwise should not overlap. If len(dst) < len(src) this function panics.
+// generation - valid values are 8, 12 or 20. The src and dst may be the same slice
+// but otherwise should not overlap. If len(dst) < len(src) this function panics.
 func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint32, rounds int) {
 	length := len(src)
 	if len(dst) < length {
@@ -46,12 +46,11 @@ func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint3
 	}
 }
 
-// Cipher is the ChaCha/X struct.
-// X is the number of rounds (e.g. ChaCha20 for 20 rounds)
+// Cipher implements ChaCha/X for a given number of rounds X.
 type Cipher struct {
 	state, block [64]byte
 	off          int
-	rounds       int
+	rounds       int // 20 for ChaCha20
 }
 
 // SetCounter sets the counter of the cipher.
