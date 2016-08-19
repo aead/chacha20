@@ -170,8 +170,6 @@ func benchmarkOpen(b *testing.B, size int) {
 
 func BenchmarkSeal64B(b *testing.B) { benchmarkSeal(b, 64) }
 func BenchmarkSeal1K(b *testing.B)  { benchmarkSeal(b, 1024) }
-func BenchmarkSeal64K(b *testing.B) { benchmarkSeal(b, 64*1024) }
 
 func BenchmarkOpen64B(b *testing.B) { benchmarkOpen(b, 64) }
 func BenchmarkOpen1K(b *testing.B)  { benchmarkOpen(b, 1024) }
-func BenchmarkOpen64K(b *testing.B) { benchmarkOpen(b, 64*1024) }

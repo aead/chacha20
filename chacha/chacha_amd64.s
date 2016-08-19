@@ -642,7 +642,7 @@ DONE:
 	RET
 
 // func supportSSSE3() bool
-TEXT ·supportSSSE3(SB),4,$0-4
+TEXT ·supportSSSE3(SB),4,$0-1
 	XORQ CX, CX
 	MOVL $1, AX
 	CPUID
@@ -653,10 +653,10 @@ TEXT ·supportSSSE3(SB),4,$0-4
 	ANDL $0x200, CX // CX != 0 if support SSSE3
 	CMPL CX, $0
 	JE FALSE
-	MOVQ $1, ret+0(FP)
+	MOVB $1, ret+0(FP)
 	JMP DONE
 FALSE:
-	MOVQ $0, ret+0(FP)
+	MOVB $0, ret+0(FP)
 DONE:
 	RET
 

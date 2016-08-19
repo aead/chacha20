@@ -129,7 +129,7 @@ func benchmarkXORKeyStream(b *testing.B, size int) {
 	}
 }
 
-func BenchmarkCipher64(b *testing.B)        { benchmarkCipher(b, 64) }
-func BenchmarkCipher16K(b *testing.B)       { benchmarkCipher(b, 16*1024) }
-func BenchmarkXORKeyStream64(b *testing.B)  { benchmarkXORKeyStream(b, 64) }
-func BenchmarkXORKeyStream16K(b *testing.B) { benchmarkXORKeyStream(b, 16*1024) }
+func BenchmarkCipher64(b *testing.B)       { benchmarkCipher(b, 64) }
+func BenchmarkCipher1K(b *testing.B)       { benchmarkCipher(b, 1024) }
+func BenchmarkXORKeyStream64(b *testing.B) { benchmarkXORKeyStream(b, 64) }
+func BenchmarkXORKeyStream1K(b *testing.B) { benchmarkXORKeyStream(b, 1024) }

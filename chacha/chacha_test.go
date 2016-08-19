@@ -14,15 +14,6 @@ func toHex(b []byte) string {
 	return hex.EncodeToString(b)
 }
 
-var mustFail = func(t *testing.T, f func(), err string) {
-	defer func() {
-		if recover() == nil {
-			t.Errorf("Function expected to fail: Expected: %s", err)
-		}
-	}()
-	f()
-}
-
 func testCore(t *testing.T, n int) {
 	var rounds = []int{8, 12, 20}
 	var key [32]byte

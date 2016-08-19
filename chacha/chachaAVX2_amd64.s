@@ -211,8 +211,8 @@ WRITE_EVEN_64_BLOCKS:
 	RET
 
 // func supportAVX2() bool
-TEXT ·supportAVX2(SB),4,$0-8
+TEXT ·supportAVX2(SB),4,$0-1
 	XORQ AX, AX
 	MOVQ runtime·support_avx2(SB), AX
-	MOVQ AX, ret+0(FP)
+	MOVB AX, ret+0(FP)
 	RET
