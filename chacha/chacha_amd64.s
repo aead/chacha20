@@ -24,7 +24,6 @@ DATA rol8<>+0x00(SB)/8, $0x0605040702010003
 DATA rol8<>+0x08(SB)/8, $0x0E0D0C0F0A09080B
 GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 
-
 #define ROTL_SSE2(n, t, v) \
  	MOVO v, t; \
 	PSLLL $n, t; \
@@ -33,8 +32,6 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 
 #define ROTL_SSSE3(c, v) \
 	PSHUFB c, v
-
-// *** The shuffle makros ***
 
 #define SHUFFLE_64(k0, k1, k2, a, b, c) \
 	PSHUFL $k0, a, a; \
@@ -62,8 +59,6 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PSHUFL $k2, c1, c1; \
 	PSHUFL $k2, c2, c2; \
 	PSHUFL $k2, c3, c3
-
-// *** The chacha round makros ***
 
 #define HALF_ROUND_64_SSE2(v0 , v1 , v2 , v3 , t0) \
 	PADDL v1, v0; \
@@ -253,7 +248,6 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	ROTL_SSE2(7, v12, v13); \
 	MOVO t0, v12
 
-// *** The xor makro ***
 
 #define XOR_64(dst, src, off, v0 , v1 , v2 , v3 , t0) \
 	MOVOU 0+off(src), t0; \
@@ -268,8 +262,6 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	MOVOU 48+off(src), t0; \
 	PXOR v3, t0; \
 	MOVOU t0, 48+off(dst)
-
-// *** Function implementations ***
 
 // func coreSSE2(dst *[64]byte, state *[16]uint32, rounds int)
 TEXT ·coreSSE2(SB),4,$0-24

@@ -36,7 +36,7 @@ func setState(state *[64]byte, key *[32]byte, nonce *[12]byte, counter uint32) {
 // but otherwise should not overlap. If len(dst) < len(src) the behavior is undefined.
 // This function increments the counter of state.
 func xorBlocks(dst, src []byte, state *[64]byte, rounds int) {
-	n := len(src) & (^(64 - 1))
+	n := len(src) & (^(64 - 1)) // n := len(src) - (len(src) % 64)
 
 	var block [64]byte
 	for i := 0; i < n; i += 64 {

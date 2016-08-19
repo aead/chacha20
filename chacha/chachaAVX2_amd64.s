@@ -106,7 +106,6 @@ GLOBL one<>(SB), (NOPTR+RODATA), $32
 	VPXOR (96+off)(src), t0, t0; \
 	VMOVDQU t0, (96+off)(dst)
 
-
 // func xorBlocksAVX2(dst, src []byte, state *[64]byte, rounds int)
 TEXT ·xorBlocksAVX2(SB),4,$0-64
 	MOVQ state+48(FP), AX
