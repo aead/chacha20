@@ -10,6 +10,9 @@ ChaCha20 (20 rounds). ChaCha20 is standardized in [RFC 7539](https://tools.ietf.
 [RFC 7539](https://tools.ietf.org/html/rfc7539 "RFC 7539") describes the combination
 of the ChaCha20 stream cipher and the Poly1305 MAC to an AEAD cipher.
 
+This code is now stable (reached v1.0) and can be used in productive environments.
+Backward compatibility is now guaranteed.
+
 ### Requirements
 Following Go versions are supported:
  - 1.5.3
@@ -28,32 +31,32 @@ Benchmarks are run on a Intel i7-6500U (Sky Lake) on linux/amd64 with Go 1.6.3 /
 AVX2 is only available for Go 1.7 and upper. See [Go 1.7 release notes](https://tip.golang.org/doc/go1.7) 
 ```
 Using AVX2 (Go 1.7)
-BenchmarkSeal64B-4           169.99 MB/s
-BenchmarkSeal1K-4            866.33 MB/s
-BenchmarkOpen64B-4           164.45 MB/s
-BenchmarkOpen1K-4            847.09 MB/s
-BenchmarkCipher64-4          583.30 MB/s
-BenchmarkCipher16K-4        1901.93 MB/s
-BenchmarkXORKeyStream64-4    396.53 MB/s
-BenchmarkXORKeyStream16K-4  1873.10 MB/s
+BenchmarkSeal64B-4           170.64 MB/s
+BenchmarkSeal1K-4            865.49 MB/s
+BenchmarkOpen64B-4           164.63 MB/s
+BenchmarkOpen1K-4            857.50 MB/s
+BenchmarkCipher64-4          587.61 MB/s
+BenchmarkCipher1K-4         1878.63 MB/s
+BenchmarkXORKeyStream64-4    408.73 MB/s
+BenchmarkXORKeyStream1K-4   1718.45 MB/s
 
 Using SSSE3:
-BenchmarkSeal64B-4        	  160.13 MB/s
-BenchmarkSeal1K-4         	  637.11 MB/s
-BenchmarkOpen64B-4        	  152.56 MB/s
-BenchmarkOpen1K-4         	  624.52 MB/s
-BenchmarkCipher64-4       	  592.42 MB/s
-BenchmarkCipher16K-4      	 1130.34 MB/s
-BenchmarkXORKeyStream64-4 	  409.88 MB/s
-BenchmarkXORKeyStream16K-4	 1125.41 MB/s
+BenchmarkSeal64B-4           171.23 MB/s
+BenchmarkSeal1K-4            658.43 MB/s
+BenchmarkOpen64B-4           165.42 MB/s
+BenchmarkOpen1K-4            654.14 MB/s
+BenchmarkCipher64-4          584.47 MB/s
+BenchmarkCipher1K-4         1120.61 MB/s
+BenchmarkXORKeyStream64-4    407.23 MB/s
+BenchmarkXORKeyStream1K-4   1059.94 MB/s
 
 Using only SSE2:
-BenchmarkSeal64B-4        	  147.87 MB/s
-BenchmarkSeal1K-4         	  556.16 MB/s
-BenchmarkOpen64B-4        	  142.78 MB/s
-BenchmarkOpen1K-4         	  549.39 MB/s
-BenchmarkCipher64-4       	  519.70 MB/s
-BenchmarkCipher16K-4      	  912.12 MB/s
-BenchmarkXORKeyStream64-4 	  369.23 MB/s
-BenchmarkXORKeyStream16K-4	  909.42 MB/s
+BenchmarkSeal64B-4           157.92 MB/s
+BenchmarkSeal1K-4            573.21 MB/s
+BenchmarkOpen64B-4           152.90 MB/s
+BenchmarkOpen1K-4            570.28 MB/s
+BenchmarkCipher64-4          511.47 MB/s
+BenchmarkCipher1K-4          906.00 MB/s
+BenchmarkXORKeyStream64-4    368.72 MB/s
+BenchmarkXORKeyStream1K-4    860.98 MB/s
 ```
