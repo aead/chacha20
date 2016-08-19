@@ -15,7 +15,7 @@ Following Go versions are supported:
  - 1.5.3
  - 1.5.4
  - 1.6.x
- - 1.7 (currently rc5) 
+ - 1.7
 
 Notice, that the code is only tested on amd64 and x86.
 On amd64 machines the CPU feature [SSE2](https://en.wikipedia.org/wiki/SSE2 "Wikipedia") is required. 
@@ -24,18 +24,18 @@ On amd64 machines the CPU feature [SSE2](https://en.wikipedia.org/wiki/SSE2 "Wik
 Install in your GOPATH: `go get -u github.com/aead/chacha20`  
 
 ### Performance
-Benchmarks are run on a Intel i7-6500U (Sky Lake) on linux/amd64 with Go 1.6.3 / 1.7rc5
-AVX2 is only available for Go 1.7 and upper. See [Go 1.7rc5 release notes](https://tip.golang.org/doc/go1.7) 
+Benchmarks are run on a Intel i7-6500U (Sky Lake) on linux/amd64 with Go 1.6.3 / 1.7  
+AVX2 is only available for Go 1.7 and upper. See [Go 1.7 release notes](https://tip.golang.org/doc/go1.7) 
 ```
-Using AVX2 (Go 1.7rc5)
-BenchmarkSeal64B-4            167.98 MB/s
-BenchmarkSeal1K-4             821.10 MB/s
-BenchmarkOpen64B-4            164.77 MB/s
-BenchmarkOpen1K-4             824.25 MB/s
-BenchmarkCipher64-4           577.03 MB/s
-BenchmarkCipher16K-4         1926.29 MB/s
-BenchmarkXORKeyStream64-4     403.98 MB/s
-BenchmarkXORKeyStream16K-4   1911.63 MB/s
+Using AVX2 (Go 1.7)
+BenchmarkSeal64B-4           169.99 MB/s
+BenchmarkSeal1K-4            866.33 MB/s
+BenchmarkOpen64B-4           164.45 MB/s
+BenchmarkOpen1K-4            847.09 MB/s
+BenchmarkCipher64-4          583.30 MB/s
+BenchmarkCipher16K-4        1901.93 MB/s
+BenchmarkXORKeyStream64-4    396.53 MB/s
+BenchmarkXORKeyStream16K-4  1873.10 MB/s
 
 Using SSSE3:
 BenchmarkSeal64B-4        	  160.13 MB/s
