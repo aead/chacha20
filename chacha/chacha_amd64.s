@@ -74,16 +74,16 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR v2, v1; \
 	ROTL_SSE2(7, t0, v1)
 
-#define HALF_ROUND_64_SSSE3(v0 , v1 , v2 , v3 , t0) \
+#define HALF_ROUND_64_SSSE3(v0 , v1 , v2 , v3 , t0, c16, c8) \
 	PADDL v1, v0; \
 	PXOR v0, v3; \
-	ROTL_SSSE3(rol16<>(SB), v3); \
+	ROTL_SSSE3(c16, v3); \
 	PADDL v3, v2; \
 	PXOR v2, v1; \
 	ROTL_SSE2(12, t0, v1); \
 	PADDL v1, v0; \
 	PXOR v0, v3; \
-	ROTL_SSSE3(rol8<>(SB), v3); \
+	ROTL_SSSE3(c8, v3); \
 	PADDL v3, v2; \
 	PXOR v2, v1; \
 	ROTL_SSE2(7, t0, v1)
@@ -114,13 +114,13 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	ROTL_SSE2(7, t0, v1); \
 	ROTL_SSE2(7, t0, v5)
 	
-#define HALF_ROUND_128_SSSE3(v0, v1, v2, v3, v4, v5, v6, v7, t0) \
+#define HALF_ROUND_128_SSSE3(v0, v1, v2, v3, v4, v5, v6, v7, t0, c16, c8) \
 	PADDL v1, v0; \
 	PADDL v5, v4; \
 	PXOR v0, v3; \
 	PXOR v4, v7; \
-	ROTL_SSSE3(rol16<>(SB), v3); \
-	ROTL_SSSE3(rol16<>(SB), v7); \
+	ROTL_SSSE3(c16, v3); \
+	ROTL_SSSE3(c16, v7); \
 	PADDL v3, v2; \
 	PADDL v7, v6; \
 	PXOR v2, v1; \
@@ -131,8 +131,8 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PADDL v5, v4; \
 	PXOR v0, v3; \
 	PXOR v4, v7; \
-	ROTL_SSSE3(rol8<>(SB), v3); \
-	ROTL_SSSE3(rol8<>(SB), v7); \
+	ROTL_SSSE3(c8, v3); \
+	ROTL_SSSE3(c8, v7); \
 	PADDL v3, v2; \
 	PADDL v7, v6; \
 	PXOR v2, v1; \
@@ -203,10 +203,12 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR v4, v7; \
 	PXOR v8, v11; \
 	PXOR v12, v15; \
-	ROTL_SSSE3(rol16<>(SB), v3); \
-	ROTL_SSSE3(rol16<>(SB), v7); \
-	ROTL_SSSE3(rol16<>(SB), v11); \
-	ROTL_SSSE3(rol16<>(SB), v15); \
+	MOVO v12, t0; \
+	MOVOU rol16<>(SB), v12; \
+	ROTL_SSSE3(v12, v3); \
+	ROTL_SSSE3(v12, v7); \
+	ROTL_SSSE3(v12, v11); \
+	ROTL_SSSE3(v12, v15); \
 	PADDL v3, v2; \
 	PADDL v7, v6; \
 	PADDL v11, v10; \
@@ -215,7 +217,6 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR v6, v5; \
 	PXOR v10, v9; \
 	PXOR v14, v13; \
-	MOVO v12, t0; \
 	ROTL_SSE2(12, v12, v1); \
 	ROTL_SSE2(12, v12, v5); \
 	ROTL_SSE2(12, v12, v9); \
@@ -229,10 +230,12 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR v4, v7; \
 	PXOR v8, v11; \
 	PXOR v12, v15; \
-	ROTL_SSSE3(rol8<>(SB), v3); \
-	ROTL_SSSE3(rol8<>(SB), v7); \
-	ROTL_SSSE3(rol8<>(SB), v11); \
-	ROTL_SSSE3(rol8<>(SB), v15); \
+	MOVO v12, t0; \
+	MOVOU rol8<>(SB), v12; \
+	ROTL_SSSE3(v12, v3); \
+	ROTL_SSSE3(v12, v7); \
+	ROTL_SSSE3(v12, v11); \
+	ROTL_SSSE3(v12, v15); \
 	PADDL v3, v2; \
 	PADDL v7, v6; \
 	PADDL v11, v10; \
@@ -241,7 +244,6 @@ GLOBL rol8<>(SB), (NOPTR+RODATA), $16
 	PXOR v6, v5; \
 	PXOR v10, v9; \
 	PXOR v14, v13; \
-	MOVO v12, t0; \
 	ROTL_SSE2(7, v12, v1); \
 	ROTL_SSE2(7, v12, v5); \
 	ROTL_SSE2(7, v12, v9); \
@@ -308,10 +310,12 @@ TEXT ·coreSSSE3(SB),4,$0-24
 	MOVO X1, X5
 	MOVO X2, X6
 	MOVO X3, X7
+	MOVOU rol16<>(SB), X9
+	MOVOU rol8<>(SB), X10
 	loop:
-		HALF_ROUND_64_SSSE3(X4, X5, X6, X7, X8)
+		HALF_ROUND_64_SSSE3(X4, X5, X6, X7, X8, X9, X10)
 		SHUFFLE_64(0x39, 0x4E, 0x93, X5, X6, X7)
-		HALF_ROUND_64_SSSE3(X4, X5, X6, X7, X8)
+		HALF_ROUND_64_SSSE3(X4, X5, X6, X7, X8, X9, X10)
 		SHUFFLE_64(0x93, 0x4E, 0x39, X5, X6, X7)
 		SUBQ $2, CX
 		JA loop
@@ -583,11 +587,13 @@ BYTES_BETWEEN_0_AND_255:
 	MOVO X2, X10
 	MOVO X3, X11
 	PADDQ X15, X11
+	MOVOU rol16<>(SB), X13
+	MOVOU rol8<>(SB), X14
 	MOVQ BP, R9
 	CHACHA_LOOP_128:
-		HALF_ROUND_128_SSSE3(X4, X5, X6, X7, X8, X9, X10, X11, X12)
+		HALF_ROUND_128_SSSE3(X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14)
 		SHUFFLE_128(0x39, 0x4E, 0x93, X5, X9, X6, X10, X7, X11)
-		HALF_ROUND_128_SSSE3(X4, X5, X6, X7, X8, X9, X10, X11, X12)
+		HALF_ROUND_128_SSSE3(X4, X5, X6, X7, X8, X9, X10, X11, X12, X13, X14)
 		SHUFFLE_128(0x93, 0x4E, 0x39, X5, X9, X6, X10, X7, X11)
 		SUBQ $2, R9
 		JA CHACHA_LOOP_128
@@ -615,11 +621,13 @@ BYTES_BETWEEN_0_AND_127:
 	MOVO X1, X5
 	MOVO X2, X6
 	MOVO X3, X7
+	MOVOU rol16<>(SB), X13
+	MOVOU rol8<>(SB), X14
 	MOVQ BP, R9
 	CHACHA_LOOP_64:
-		HALF_ROUND_64_SSSE3(X4, X5, X6, X7, X8)
+		HALF_ROUND_64_SSSE3(X4, X5, X6, X7, X8, X13, X14)
 		SHUFFLE_64(0x39, 0x4E, 0x93, X5, X6, X7)
-		HALF_ROUND_64_SSSE3(X4, X5, X6, X7, X8)
+		HALF_ROUND_64_SSSE3(X4, X5, X6, X7, X8, X13, X14)
 		SHUFFLE_64(0x93, 0x4E, 0x39, X5, X6, X7)
 		SUBQ $2, R9
 		JA CHACHA_LOOP_64

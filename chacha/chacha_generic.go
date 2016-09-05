@@ -147,7 +147,7 @@ func core(dst *[64]byte, state *[64]byte, rounds int) {
 	v14 += s14
 	v15 += s15
 
-	s12 += 1
+	s12++
 	state[48] = byte(s12)
 	state[49] = byte(s12 >> 8)
 	state[50] = byte(s12 >> 16)
