@@ -101,7 +101,7 @@ func TestXORKeyStream(t *testing.T) {
 	for i := range key {
 		key[i] = byte(i)
 	}
-	buf0, buf1 := make([]byte, 256), make([]byte, 256)
+	buf0, buf1 := make([]byte, 512), make([]byte, 512)
 
 	c := NewCipher(&nonce, &key, 20)
 	c.XORKeyStream(buf0[:1], buf0[:1])
@@ -152,5 +152,7 @@ func TestXorBlocks(t *testing.T) {
 	testXorBlocks(t, 384)
 	testXorBlocks(t, 448)
 	testXorBlocks(t, 512)
+	testXorBlocks(t, 768)
 	testXorBlocks(t, 1024)
+	testXorBlocks(t, 1280)
 }
