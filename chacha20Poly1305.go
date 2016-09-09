@@ -81,8 +81,7 @@ func (c *aead) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	c.engine.XORKeyStream(ciphertext, plaintext)
 
 	// authenticate the ciphertext
-	var tag [poly1305.TagSize]byte
-	authenticate(&tag, ciphertext[:n], additionalData, &polyKey)
+	tag := authenticate(ciphertext[:n], additionalData, &polyKey)
 	copy(ciphertext[n:], tag[:c.tagsize])
 
 	return ret
@@ -109,9 +108,8 @@ func (c *aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, erro
 
 	// authenticate the ciphertext
 	n := len(ciphertext) - c.tagsize
-	var tag [poly1305.TagSize]byte
-	authenticate(&tag, ciphertext[:n], additionalData, &polyKey)
 	sum := ciphertext[n:]
+	tag := authenticate(ciphertext[:n], additionalData, &polyKey)
 	if subtle.ConstantTimeCompare(tag[:c.tagsize], sum[:c.tagsize]) != 1 {
 		return nil, errAuthFailed
 	}
@@ -125,11 +123,11 @@ func (c *aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, erro
 
 // authenticate calculates the poly1305 tag from
 // the given ciphertext and additional data.
-func authenticate(out *[TagSize]byte, ciphertext, additionalData []byte, key *[32]byte) {
+func authenticate(ciphertext, additionalData []byte, key *[32]byte) [TagSize]byte {
 	ctLen := uint64(len(ciphertext))
 	adLen := uint64(len(additionalData))
 
-	var buf, pad [TagSize]byte
+	var tag, buf, pad [TagSize]byte
 	buf[0] = byte(adLen)
 	buf[1] = byte(adLen >> 8)
 	buf[2] = byte(adLen >> 16)
@@ -149,7 +147,9 @@ func authenticate(out *[TagSize]byte, ciphertext, additionalData []byte, key *[3
 
 	poly := poly1305.New(key)
 
-	poly.Write(additionalData)
+	if adLen > 0 {
+		poly.Write(additionalData)
+	}
 	if padAD := adLen % TagSize; padAD > 0 {
 		poly.Write(pad[:16-padAD])
 	}
@@ -160,7 +160,8 @@ func authenticate(out *[TagSize]byte, ciphertext, additionalData []byte, key *[3
 	}
 
 	poly.Write(buf[:])
-	poly.Sum(out)
+	poly.Sum(&tag)
+	return tag
 }
 
 // sliceForAppend takes a slice and a requested number of bytes. It returns a
