@@ -27,36 +27,39 @@ On amd64 machines the CPU feature [SSE2](https://en.wikipedia.org/wiki/SSE2 "Wik
 Install in your GOPATH: `go get -u github.com/aead/chacha20`  
 
 ### Performance
-Benchmarks are run on a Intel i7-6500U (Sky Lake) on linux/amd64 with Go 1.6.3 / 1.7  
+Benchmarks are run on a Intel i7-6500U (Sky Lake) on linux/amd64 with Go 1.7  
 AVX2 is only available for Go 1.7 and upper. See [Go 1.7 release notes](https://tip.golang.org/doc/go1.7) 
 ```
-Using AVX2 (Go 1.7)
-BenchmarkSeal64B-4           170.64 MB/s
-BenchmarkSeal1K-4            865.49 MB/s
-BenchmarkOpen64B-4           164.63 MB/s
-BenchmarkOpen1K-4            857.50 MB/s
-BenchmarkCipher64-4          587.61 MB/s
-BenchmarkCipher1K-4         1878.63 MB/s
-BenchmarkXORKeyStream64-4    408.73 MB/s
-BenchmarkXORKeyStream1K-4   1718.45 MB/s
+Using AVX2
+name                    time/op      name                       speed
+Seal64B-4            359ns ± 0%      Seal64B-4          178 MB/s ± 0%
+Seal1K-4            1.10µs ± 0%      Seal1K-4           928 MB/s ± 0%
+Open64B-4            372ns ± 0%      Open64B-4          172 MB/s ± 0%
+Open1K-4            1.12µs ± 0%      Open1K-4           914 MB/s ± 0%
+Cipher64-4           110ns ± 0%      Cipher64-4         580 MB/s ± 0%
+Cipher1K-4           470ns ± 0%      Cipher1K-4        2.17 GB/s ± 0%
+XORKeyStream64-4     156ns ± 0%      XORKeyStream64-4   408 MB/s ± 1%
+XORKeyStream1K-4     521ns ± 0%      XORKeyStream1K-4  1.96 GB/s ± 0%
 
 Using SSSE3:
-BenchmarkSeal64B-4           171.23 MB/s
-BenchmarkSeal1K-4            658.43 MB/s
-BenchmarkOpen64B-4           165.42 MB/s
-BenchmarkOpen1K-4            654.14 MB/s
-BenchmarkCipher64-4          584.47 MB/s
-BenchmarkCipher1K-4         1120.61 MB/s
-BenchmarkXORKeyStream64-4    407.23 MB/s
-BenchmarkXORKeyStream1K-4   1059.94 MB/s
+name              	    time/op      name                       speed
+Seal64B-4            358ns ± 0%      Seal64B-4          178 MB/s ± 0%
+Seal1K-4            1.55µs ± 0%      Seal1K-4           660 MB/s ± 0%
+Open64B-4            372ns ± 0%      Open64B-4          172 MB/s ± 0%
+Open1K-4            1.58µs ± 0%      Open1K-4           649 MB/s ± 0%
+Cipher64-4           110ns ± 0%      Cipher64-4         580 MB/s ± 0%
+Cipher1K-4           924ns ± 0%      Cipher1K-4        1.11 GB/s ± 0%
+XORKeyStream64-4     156ns ± 0%      XORKeyStream64-4   410 MB/s ± 0%
+XORKeyStream1K-4     972ns ± 0%      XORKeyStream1K-4  1.05 GB/s ± 0%
 
-Using only SSE2:
-BenchmarkSeal64B-4           157.92 MB/s
-BenchmarkSeal1K-4            573.21 MB/s
-BenchmarkOpen64B-4           152.90 MB/s
-BenchmarkOpen1K-4            570.28 MB/s
-BenchmarkCipher64-4          511.47 MB/s
-BenchmarkCipher1K-4          906.00 MB/s
-BenchmarkXORKeyStream64-4    368.72 MB/s
-BenchmarkXORKeyStream1K-4    860.98 MB/s
+Using SSE2:
+name                   time/op       name                       speed
+Seal64B-4           388ns ± 0%       Seal64B-4          164 MB/s ± 0%
+Seal1K-4           1.89µs ± 4%       Seal1K-4           543 MB/s ± 4%
+Open64B-4           403ns ± 0%       Open64B-4          159 MB/s ± 0%
+Open1K-4           1.83µs ± 0%       Open1K-4           558 MB/s ± 0%
+Cipher64-4          125ns ± 0%       Cipher64-4         509 MB/s ± 0%
+Cipher1K-4         1.18µs ± 0%       Cipher1K-4         868 MB/s ± 0%
+XORKeyStream64-4    172ns ± 0%       XORKeyStream64-4   371 MB/s ± 0%
+XORKeyStream1K-4   1.23µs ± 0%       XORKeyStream1K-4   835 MB/s ± 0%
 ```

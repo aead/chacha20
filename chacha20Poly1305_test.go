@@ -141,12 +141,11 @@ func benchmarkSeal(b *testing.B, size int) {
 
 	msg := make([]byte, size)
 	dst := make([]byte, len(msg)+TagSize)
-	data := make([]byte, 32)
 
 	b.SetBytes(int64(size))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		dst = c.Seal(dst[:0], nonce[:], msg, data)
+		dst = c.Seal(dst[:0], nonce[:], msg, nil)
 	}
 }
 
@@ -158,13 +157,12 @@ func benchmarkOpen(b *testing.B, size int) {
 	msg := make([]byte, size)
 	dst := make([]byte, size)
 	ciphertext := make([]byte, size+TagSize)
-	data := make([]byte, 32)
-	ciphertext = c.Seal(ciphertext[:0], nonce[:], msg, data)
+	ciphertext = c.Seal(ciphertext[:0], nonce[:], msg, nil)
 
 	b.SetBytes(int64(size))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		dst, _ = c.Open(dst[:0], nonce[:], ciphertext, data)
+		dst, _ = c.Open(dst[:0], nonce[:], ciphertext, nil)
 	}
 }
 
