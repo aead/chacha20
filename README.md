@@ -34,7 +34,7 @@ Using AVX2
 name                    time/op      name                       speed
 Seal64B-4            359ns ± 0%      Seal64B-4          178 MB/s ± 0%
 Seal1K-4            1.10µs ± 0%      Seal1K-4           928 MB/s ± 0%
-Open64B-4            372ns ± 0%      Seal1K-4           928 MB/s ± 0%
+Open64B-4            372ns ± 0%      Open64B-4          172 MB/s ± 0%
 Open1K-4            1.12µs ± 0%      Open1K-4           914 MB/s ± 0%
 Cipher64-4           110ns ± 0%      Cipher64-4         580 MB/s ± 0%
 Cipher1K-4           470ns ± 0%      Cipher1K-4        2.17 GB/s ± 0%
