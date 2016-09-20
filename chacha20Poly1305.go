@@ -18,6 +18,7 @@ const TagSize = poly1305.TagSize
 
 var (
 	errAuthFailed       = errors.New("authentication failed")
+	errCtxtTooLarge     = errors.New("ciphertext is too large")
 	errInvalidNonceSize = errors.New("nonce size is invalid")
 	errInvalidTagSize   = errors.New("tag size must be between 1 and 16")
 )
@@ -64,6 +65,10 @@ func (c *aead) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 		panic("chacha20: nonce size is invalid")
 	}
 
+	if uint64(len(plaintext)) > (1<<38)-64 {
+		panic("chacha20: plaintext too large")
+	}
+
 	// create the poly1305 key
 	var (
 		Nonce   [12]byte
@@ -90,6 +95,9 @@ func (c *aead) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 func (c *aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
 	if n := len(nonce); n != NonceSize {
 		return nil, errInvalidNonceSize
+	}
+	if uint64(len(ciphertext)) > (1<<38)-48 {
+		return nil, errCtxtTooLarge
 	}
 	if len(ciphertext) < c.tagsize {
 		return nil, errAuthFailed

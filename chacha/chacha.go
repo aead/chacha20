@@ -31,6 +31,9 @@ func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint3
 	if rounds != 20 && rounds != 12 && rounds != 8 {
 		panic("chacha20/chacha: rounds must be a 8, 12, or 20")
 	}
+	if uint64(len(src)) > (1 << 38) {
+		panic("chacha20/chacha: src is too large")
+	}
 
 	var state [64]byte
 	setState(&state, key, nonce, counter)
