@@ -10,7 +10,7 @@ ChaCha20 (20 rounds). ChaCha20 is standardized in [RFC 7539](https://tools.ietf.
 [RFC 7539](https://tools.ietf.org/html/rfc7539 "RFC 7539") describes the combination
 of the ChaCha20 stream cipher and the Poly1305 MAC to an AEAD cipher.
 
-This code is now stable (reached v1.0) and can be used in productive environments.
+This code is now stable and can be used in productive environments.
 Backward compatibility is now guaranteed.
 
 ### Requirements
@@ -18,10 +18,9 @@ Following Go versions are supported:
  - 1.5.3
  - 1.5.4
  - 1.6.x
- - 1.7
+ - 1.7.x
 
 Notice, that the code is only tested on amd64 and x86.
-On amd64 machines the CPU feature [SSE2](https://en.wikipedia.org/wiki/SSE2 "Wikipedia") is required. 
 
 ### Installation
 Install in your GOPATH: `go get -u github.com/aead/chacha20`  
