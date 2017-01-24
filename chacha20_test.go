@@ -27,7 +27,7 @@ func toHex(b []byte) string {
 var testVectorsIETF = []struct {
 	key, nonce      string
 	msg, ciphertext string
-	ctr             uint32
+	ctr             int
 }{
 	{
 		key:   "0000000000000000000000000000000000000000000000000000000000000000",
@@ -114,149 +114,66 @@ var testVectorsIETF = []struct {
 			"87b58dfd728afa36757a797ac188d1",
 		ctr: 42,
 	},
-}
-
-// From https://tools.ietf.org/html/draft-strombergson-chacha-test-vectors-01
-var testVectors8Nonce = []struct {
-	key, nonce, stream string
-}{
+	// From https://tools.ietf.org/html/draft-strombergson-chacha-test-vectors-01
 	{
 		key:   "0000000000000000000000000000000000000000000000000000000000000000",
 		nonce: "0000000000000000",
-		stream: "76b8e0ada0f13d90405d6ae55386bd28bdd219b8a08ded1aa836efcc8b770dc7" +
+		msg:   toHex(make([]byte, 128)),
+		ciphertext: "76b8e0ada0f13d90405d6ae55386bd28bdd219b8a08ded1aa836efcc8b770dc7" +
 			"da41597c5157488d7724e03fb8d84a376a43b8f41518a11cc387b669b2ee6586" +
 			"9f07e7be5551387a98ba977c732d080dcb0f29a048e3656912c6533e32ee7aed" +
 			"29b721769ce64e43d57133b074d839d531ed1f28510afb45ace10a1f4b794d6f",
+		ctr: 0,
 	},
 	{
 		key:   "0100000000000000000000000000000000000000000000000000000000000000",
 		nonce: "0000000000000000",
-		stream: "c5d30a7ce1ec119378c84f487d775a8542f13ece238a9455e8229e888de85bbd" +
+		msg:   toHex(make([]byte, 128)),
+		ciphertext: "c5d30a7ce1ec119378c84f487d775a8542f13ece238a9455e8229e888de85bbd" +
 			"29eb63d0a17a5b999b52da22be4023eb07620a54f6fa6ad8737b71eb0464dac0" +
 			"10f656e6d1fd55053e50c4875c9930a33f6d0263bd14dfd6ab8c70521c19338b" +
 			"2308b95cf8d0bb7d202d2102780ea3528f1cb48560f76b20f382b942500fceac",
+		ctr: 0,
 	},
 	{
 		key:   "0000000000000000000000000000000000000000000000000000000000000000",
 		nonce: "0100000000000000",
-		stream: "ef3fdfd6c61578fbf5cf35bd3dd33b8009631634d21e42ac33960bd138e50d32" +
+		msg:   toHex(make([]byte, 128)),
+		ciphertext: "ef3fdfd6c61578fbf5cf35bd3dd33b8009631634d21e42ac33960bd138e50d32" +
 			"111e4caf237ee53ca8ad6426194a88545ddc497a0b466e7d6bbdb0041b2f586b" +
 			"5305e5e44aff19b235936144675efbe4409eb7e8e5f1430f5f5836aeb49bb532" +
 			"8b017c4b9dc11f8a03863fa803dc71d5726b2b6b31aa32708afe5af1d6b69058",
+		ctr: 0,
 	},
 	{
 		key:   "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 		nonce: "ffffffffffffffff",
-		stream: "d9bf3f6bce6ed0b54254557767fb57443dd4778911b606055c39cc25e674b836" +
+		msg:   toHex(make([]byte, 128)),
+		ciphertext: "d9bf3f6bce6ed0b54254557767fb57443dd4778911b606055c39cc25e674b836" +
 			"3feabc57fde54f790c52c8ae43240b79d49042b777bfd6cb80e931270b7f50eb" +
 			"5bac2acd86a836c5dc98c116c1217ec31d3a63a9451319f097f3b4d6dab07787" +
 			"19477d24d24b403a12241d7cca064f790f1d51ccaff6b1667d4bbca1958c4306",
+		ctr: 0,
 	},
 }
 
-// Test vector from:
-// https://tools.ietf.org/html/rfc7539#section-2.8.2
-var testVectorsAEAD = []struct {
-	key, nonce, data string
-	msg, ciphertext  string
-	tagSize          int
-}{
-	{
-		key: "808182838485868788898a8b8c8d8e8f" +
-			"909192939495969798999a9b9c9d9e9f",
-		nonce: "070000004041424344454647",
-		data:  "50515253c0c1c2c3c4c5c6c7",
-		msg: "4c616469657320616e642047656e746c656d656e206f662074686520636c6173" +
-			"73206f66202739393a204966204920636f756c64206f6666657220796f75206f" +
-			"6e6c79206f6e652074697020666f7220746865206675747572652c2073756e73" +
-			"637265656e20776f756c642062652069742e",
-		ciphertext: "d31a8d34648e60db7b86afbc53ef7ec2" +
-			"a4aded51296e08fea9e2b5a736ee62d6" +
-			"3dbea45e8ca9671282fafb69da92728b" +
-			"1a71de0a9e060b2905d6a5b67ecd3b36" +
-			"92ddbd7f2d778b8c9803aee328091b58" +
-			"fab324e4fad675945585808b4831d7bc" +
-			"3ff4def08e4b7a9de576d26586cec64b" +
-			"6116" +
-			"1ae10b594f09e26a7e902ecbd0600691", // poly 1305 tag
-		tagSize: TagSize,
-	},
-	{
-		key: "808182838485868788898a8b8c8d8e8f" +
-			"909192939495969798999a9b9c9d9e9f",
-		nonce: "070000004041424344454647",
-		data:  "50515253c0c1c2c3c4c5c6c7",
-		msg: "4c616469657320616e642047656e746c656d656e206f662074686520636c6173" +
-			"73206f66202739393a204966204920636f756c64206f6666657220796f75206f" +
-			"6e6c79206f6e652074697020666f7220746865206675747572652c2073756e73" +
-			"637265656e20776f756c642062652069742e",
-		ciphertext: "d31a8d34648e60db7b86afbc53ef7ec2" +
-			"a4aded51296e08fea9e2b5a736ee62d6" +
-			"3dbea45e8ca9671282fafb69da92728b" +
-			"1a71de0a9e060b2905d6a5b67ecd3b36" +
-			"92ddbd7f2d778b8c9803aee328091b58" +
-			"fab324e4fad675945585808b4831d7bc" +
-			"3ff4def08e4b7a9de576d26586cec64b" +
-			"6116" +
-			"1ae10b594f09e26a7e902ecb", // poly 1305 tag
-		tagSize: 12,
-	},
-}
-
-func TestAEADVectors(t *testing.T) {
-	for i, v := range testVectorsAEAD {
-		key := fromHex(v.key)
-		nonce := fromHex(v.nonce)
-		msg := fromHex(v.msg)
-		data := fromHex(v.data)
-		ciphertext := fromHex(v.ciphertext)
-
-		var Key [32]byte
-		copy(Key[:], key)
-		c, err := NewChaCha20Poly1305WithTagSize(&Key, v.tagSize)
-		if err != nil {
-			t.Errorf("Test vector %d: Failed to create AEAD instance: %s", i, err)
-		}
-
-		buf := make([]byte, len(ciphertext))
-		c.Seal(buf[:0], nonce, msg, data)
-
-		if !bytes.Equal(buf, ciphertext) {
-			t.Errorf("TestVector %d Seal failed:\nFound   : %s\nExpected: %s", i, toHex(buf), toHex(ciphertext))
-		}
-
-		buf, err = c.Open(buf[:0], nonce, buf, data)
-
-		if err != nil {
-			t.Errorf("TestVector %d: Open failed - Cause: %s", i, err)
-		}
-		if !bytes.Equal(msg, buf) {
-			t.Errorf("TestVector %d Open failed:\nFound   : %s\nExpected: %s", i, toHex(buf), toHex(msg))
-		}
-	}
-}
-
-func TestVectorsIETF(t *testing.T) {
+func TestVectors(t *testing.T) {
+	var key [32]byte
 	for i, v := range testVectorsIETF {
-		key := fromHex(v.key)
+		copy(key[:], fromHex(v.key))
 		nonce := fromHex(v.nonce)
 		msg := fromHex(v.msg)
 		ciphertext := fromHex(v.ciphertext)
-
-		var (
-			Key   [32]byte
-			Nonce [12]byte
-		)
-		copy(Key[:], key)
-		copy(Nonce[:], nonce)
 		buf := make([]byte, len(ciphertext))
 
-		XORKeyStream(buf, msg, &Nonce, &Key, v.ctr)
-		if !bytes.Equal(buf, ciphertext) {
-			t.Errorf("Test vector %d :\nXORKeyStream() produces unexpected keystream:\nXORKeyStream(): %s\nExpected:             %s", i, toHex(buf), toHex(ciphertext))
+		if v.ctr == 0 {
+			XORKeyStream(buf, msg, nonce, &key)
+			if !bytes.Equal(buf, ciphertext) {
+				t.Errorf("Test vector %d :\nXORKeyStream() produces unexpected keystream:\nXORKeyStream(): %s\nExpected:             %s", i, toHex(buf), toHex(ciphertext))
+			}
 		}
 
-		c := NewCipher(&Nonce, &Key)
+		c := NewCipher(nonce, &key)
 		var trash [64]byte
 		for i := 0; i < int(v.ctr); i++ {
 			c.XORKeyStream(trash[:], trash[:])
@@ -268,39 +185,12 @@ func TestVectorsIETF(t *testing.T) {
 	}
 }
 
-func TestVectors8Nonce(t *testing.T) {
-	for i, v := range testVectors8Nonce {
-		key := fromHex(v.key)
-		nonce := fromHex(v.nonce)
-		keystream := fromHex(v.stream)
-
-		var (
-			Key   [32]byte
-			Nonce [12]byte
-		)
-		copy(Key[:], key)
-		copy(Nonce[4:], nonce)
-		buf := make([]byte, len(keystream))
-
-		XORKeyStream(buf, make([]byte, len(buf)), &Nonce, &Key, 0)
-		if !bytes.Equal(buf, keystream) {
-			t.Errorf("Test vector %d :\nXORKeyStream() produces unexpected keystream:\nXORKeyStream(): %s\nExpected:             %s", i, toHex(buf), toHex(keystream))
-		}
-
-		c := NewCipher(&Nonce, &Key)
-		c.XORKeyStream(buf[:], make([]byte, len(buf)))
-		if !bytes.Equal(buf, keystream) {
-			t.Errorf("Test vector %d :\nc.XORKeyStream() produces unexpected keystream:\nc.XORKeyStream(): %s\nExpected:         %s", i, toHex(buf), toHex(keystream))
-		}
-	}
-}
-
 func benchmarkCipher(b *testing.B, size int) {
 	var (
 		key   [32]byte
 		nonce [NonceSize]byte
 	)
-	c := NewCipher(&nonce, &key)
+	c := NewCipher(nonce[:], &key)
 	buf := make([]byte, size)
 
 	b.SetBytes(int64(len(buf)))
@@ -319,7 +209,7 @@ func benchmarkXORKeyStream(b *testing.B, size int) {
 	b.SetBytes(int64(len(buf)))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		XORKeyStream(buf, buf, &nonce, &key, 0)
+		XORKeyStream(buf, buf, nonce[:], &key)
 	}
 }
 
