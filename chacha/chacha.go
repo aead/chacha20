@@ -80,7 +80,8 @@ func NewCipher(nonce []byte, key *[32]byte, rounds int) *Cipher {
 		copy(Nonce[:], nonce[:16])
 		HChaCha20(key, &Nonce, key)
 		copy(Nonce[8:], nonce[16:])
-	default: // TODO (add error handling)
+	default:
+		panic("invalid nonce size") // TODO (add error handling)
 	}
 
 	c := new(Cipher)
@@ -99,10 +100,13 @@ func (c *Cipher) XORKeyStream(dst, src []byte) {
 
 	if c.off > 0 {
 		n := len(c.block[c.off:])
-		if len(src) < n {
+		if len(src) <= n {
 			for i, v := range src {
 				dst[i] = v ^ c.block[c.off]
 				c.off++
+			}
+			if c.off == 64 {
+				c.off = 0
 			}
 			return
 		}

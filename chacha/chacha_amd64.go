@@ -41,6 +41,8 @@ func xorKeyStreamSSSE3(dst, src []byte, block, state *[64]byte, rounds int) int
 func xorKeyStream(dst, src []byte, block, state *[64]byte, rounds int) int {
 	if useSSSE3 {
 		return xorKeyStreamSSSE3(dst, src, block, state, rounds)
+	} else if useSSE2 { // on amd64 this is  always true - this is testing generic on amd64
+		return xorKeyStreamSSE2(dst, src, block, state, rounds)
 	}
-	return xorKeyStreamSSE2(dst, src, block, state, rounds)
+	return xorKeyStreamGeneric(dst, src, block, state, rounds)
 }

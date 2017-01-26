@@ -166,6 +166,10 @@ TEXT ·xorKeyStreamSSSE3(SB),4,$64-40
     MOVL state+28(FP), AX
 	MOVL rounds+32(FP), DX
 
+    MOVOU 48(AX), X3
+    TESTL CX, CX
+    JZ done
+
     MOVL SP, BP
     ADDL $16, SP
     ANDL $-16, SP
@@ -180,11 +184,7 @@ TEXT ·xorKeyStreamSSSE3(SB),4,$64-40
     MOVOU 0(AX), X0
     MOVOU ·rol16<>(SB), X1
     MOVOU ·rol8<>(SB), X2
-    MOVOU 48(AX), X3
-
-    TESTL CX, CX
-    JZ done
-
+    
 at_least_64:
     MOVO X0, X4
     MOVO 16(SP), X5

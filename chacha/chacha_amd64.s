@@ -78,7 +78,7 @@ GLOBL ·rol8<>(SB), (NOPTR+RODATA), $16
 	MOVOU t0, 48+off(dst)
 
 // func xorKeyStreamSSE2(dst, src []byte, block, state *[64]byte, rounds int) int
-TEXT ·xorKeyStreamSSE2(SB),4,$0-80
+TEXT ·xorKeyStreamSSE2(SB),4,$112-80
 	MOVQ dst_base+0(FP), DI
 	MOVQ src_base+24(FP), SI
 	MOVQ src_len+32(FP), CX
@@ -86,20 +86,217 @@ TEXT ·xorKeyStreamSSE2(SB),4,$0-80
     MOVQ state+56(FP), AX
 	MOVQ rounds+64(FP), DX
 
+    MOVQ SP, R9
+    ADDQ $16, SP
+    ANDQ $-16, SP
+
     MOVOU 0(AX), X0
     MOVOU 16(AX), X1
     MOVOU 32(AX), X2
     MOVOU 48(AX), X3
-    MOVOU ·one<>(SB), X15
+    MOVO X3, 48(SP)
+
+    TESTQ CX, CX
+    JZ done
 
     CMPQ CX, $64
     JBE between_0_and_64
 
-at_least_128:
+    CMPQ CX, $128
+    JBE between_64_and_128
+
+    CMPQ CX, $192
+    JBE between_128_and_192
+
+    MOVOU ·one<>(SB), X15
+    MOVO X0, 0(SP)
+    MOVO X1, 16(SP)
+    MOVO X2, 32(SP)
+    MOVO X15, 64(SP)
+
+at_least_256:
     MOVO X0, X4
     MOVO X1, X5
     MOVO X2, X6
-    MOVO X3, X7    
+    MOVO X3, X7
+    PADDQ 64(SP), X7    
+    MOVO X0, X12
+    MOVO X1, X13
+    MOVO X2, X14
+    MOVO X7, X15
+    PADDQ 64(SP), X15
+    MOVO X0, X8
+    MOVO X1, X9
+    MOVO X2, X10
+    MOVO X15, X11
+    PADDQ 64(SP), X11
+    
+    MOVQ DX, R8
+chacha_loop_256:
+    MOVO X8, 80(SP)
+    CHACHA_QROUND_SSE2(X0, X1, X2, X3, X8)
+    CHACHA_QROUND_SSE2(X4, X5, X6, X7, X8)
+    MOVO 80(SP), X8
+
+    MOVO X0, 80(SP)
+    CHACHA_QROUND_SSE2(X12, X13, X14, X15, X0)
+    CHACHA_QROUND_SSE2(X8, X9, X10, X11, X0)
+    MOVO 80(SP), X0
+    
+    CHACHA_SHUFFLE(X1, X2, X3)
+    CHACHA_SHUFFLE(X5, X6, X7)
+    CHACHA_SHUFFLE(X13, X14, X15)
+    CHACHA_SHUFFLE(X9, X10, X11)
+    
+    MOVO X8, 80(SP)
+    CHACHA_QROUND_SSE2(X0, X1, X2, X3, X8)
+    CHACHA_QROUND_SSE2(X4, X5, X6, X7, X8)
+    MOVO 80(SP), X8
+    
+    MOVO X0, 80(SP)
+    CHACHA_QROUND_SSE2(X12, X13, X14, X15, X0)
+    CHACHA_QROUND_SSE2(X8, X9, X10, X11, X0)
+    MOVO 80(SP), X0
+
+    CHACHA_SHUFFLE(X3, X2, X1)
+    CHACHA_SHUFFLE(X7, X6, X5)
+    CHACHA_SHUFFLE(X15, X14, X13)
+    CHACHA_SHUFFLE(X11, X10, X9)
+    SUBQ $2, R8
+    JA chacha_loop_256
+
+    MOVO X8, 80(SP)
+    
+    PADDL 0(SP), X0
+    PADDL 16(SP), X1
+    PADDL 32(SP), X2
+    PADDL 48(SP), X3
+    XOR(DI, SI, 0, X0, X1, X2, X3, X8) 
+    MOVO 0(SP), X0
+    MOVO 16(SP), X1
+    MOVO 32(SP), X2
+    MOVO 48(SP), X3
+    PADDQ 64(SP), X3
+
+    PADDL X0, X4
+    PADDL X1, X5
+    PADDL X2, X6
+    PADDL X3, X7
+    PADDQ 64(SP), X3
+    XOR(DI, SI, 64, X4, X5, X6, X7, X8)
+    
+    MOVO 80(SP), X8
+
+    PADDL X0, X12
+    PADDL X1, X13
+    PADDL X2, X14
+    PADDL X3, X15
+    PADDQ 64(SP), X3
+    XOR(DI, SI, 128, X12, X13, X14, X15, X4)
+    
+    PADDL X0, X8
+    PADDL X1, X9
+    PADDL X2, X10
+    PADDL X3, X11
+    PADDQ 64(SP), X3
+
+    ADDQ $192, SI
+    ADDQ $192, DI
+    SUBQ $192, CX
+    CMPQ CX, $64
+    JB less_than_64
+
+    XOR(DI, SI, 0, X8, X9, X10, X11, X4)
+    MOVO X3, 48(SP)
+    ADDQ $64, SI
+    ADDQ $64, DI
+    SUBQ $64, CX
+    CMPQ CX, $192
+    JA at_least_256
+    
+    TESTQ CX, CX
+    JZ done
+    CMPQ CX, $64
+    JBE between_0_and_64
+    CMPQ CX, $128
+    JBE between_64_and_128
+
+between_128_and_192:
+    MOVO X3, 48(AX)
+    MOVOU ·one<>(SB), X15
+    MOVO X0, X4
+    MOVO X1, X5
+    MOVO X2, X6
+    MOVO X3, X7
+    PADDQ X15, X7
+    MOVO X0, X8
+    MOVO X1, X9
+    MOVO X2, X10
+    MOVO X7, X11
+    PADDQ X15, X11
+
+    MOVQ DX, R8
+chacha_loop_192:
+    CHACHA_QROUND_SSE2(X0, X1, X2, X3, X12)
+    CHACHA_QROUND_SSE2(X4, X5, X6, X7, X12)
+    CHACHA_QROUND_SSE2(X8, X9, X10, X11, X12)
+    CHACHA_SHUFFLE(X1, X2, X3)
+    CHACHA_SHUFFLE(X5, X6, X7)
+    CHACHA_SHUFFLE(X9, X10, X11)
+    CHACHA_QROUND_SSE2(X0, X1, X2, X3, X12)
+    CHACHA_QROUND_SSE2(X4, X5, X6, X7, X12)
+    CHACHA_QROUND_SSE2(X8, X9, X10, X11, X12)
+    CHACHA_SHUFFLE(X3, X2, X1)
+    CHACHA_SHUFFLE(X7, X6, X5)
+    CHACHA_SHUFFLE(X11, X10, X9)
+    SUBQ $2, R8
+    JA chacha_loop_192
+
+    MOVOU 0(AX), X12
+    PADDL X12, X0
+    MOVOU 16(AX), X12
+    PADDL X12, X1
+    MOVOU 32(AX), X12
+    PADDL X12, X2
+    MOVOU 48(AX), X12
+    PADDL X12, X3
+    XOR(DI, SI, 0, X0, X1, X2, X3, X12)
+
+    MOVOU 0(AX), X0
+    MOVOU 16(AX), X1
+    MOVOU 32(AX), X2
+    MOVOU 48(AX), X3
+    PADDQ X15, X3
+    
+    PADDL X0, X4
+    PADDL X1, X5
+    PADDL X2, X6
+    PADDL X3, X7
+    PADDQ X15, X3
+    XOR(DI, SI, 64, X4, X5, X6, X7, X12)
+
+    PADDL X0, X8
+    PADDL X1, X9
+    PADDL X2, X10
+    PADDL X3, X11
+    PADDQ X15, X3
+    
+    ADDQ $128, SI
+    ADDQ $128, DI
+    SUBQ $128, CX
+    CMPQ CX, $64
+    JB less_than_64
+    
+    XOR(DI, SI, 0, X8, X9, X10, X11, X12)
+    SUBQ $64, CX
+    JMP done
+
+between_64_and_128:
+    MOVOU ·one<>(SB), X15
+    MOVO X0, X4
+    MOVO X1, X5
+    MOVO X2, X6
+    MOVO X3, X7 
     MOVO X0, X8
     MOVO X1, X9
     MOVO X2, X10
@@ -129,64 +326,50 @@ chacha_loop_128:
     PADDL X2, X10
     PADDL X3, X11
     PADDQ X15, X3
-
-    CMPQ CX, $128
-    JB less_than_128
-
     XOR(DI, SI, 0, X4, X5, X6, X7, X12)
-    XOR(DI, SI, 64, X8, X9, X10, X11, X12)
-    ADDQ $128, SI
-    ADDQ $128, DI
-    SUBQ $128, CX
-    CMPQ CX, $64
-    JA at_least_128
     
-    TESTQ CX, CX
-    JZ done
-    JMP between_0_and_64
-
-less_than_128:
-    XOR(DI, SI, 0, X4, X5, X6, X7, X12)
     ADDQ $64, SI
     ADDQ $64, DI
     SUBQ $64, CX
-    MOVO X8, X4
-    MOVO X9, X5
-    MOVO X10, X6
-    MOVO X11, X7
-    JMP less_than_64
+    CMPQ CX, $64
+    JB less_than_64
+
+    XOR(DI, SI, 0, X8, X9, X10, X11, X12)
+    SUBQ $64, CX
+    JMP done
 
 between_0_and_64:
-    MOVO X0, X4
-    MOVO X1, X5
-    MOVO X2, X6
-    MOVO X3, X7
+    MOVOU ·one<>(SB), X15
+    MOVO X0, X8
+    MOVO X1, X9
+    MOVO X2, X10
+    MOVO X3, X11
     MOVQ DX, R8 
-chacha_final_loop_64:
-    CHACHA_QROUND_SSE2(X4, X5, X6, X7, X12)
-    CHACHA_SHUFFLE(X5, X6, X7)
-    CHACHA_QROUND_SSE2(X4, X5, X6, X7, X12)
-    CHACHA_SHUFFLE(X7, X6, X5)
+chacha_loop_64:
+    CHACHA_QROUND_SSE2(X8, X9, X10, X11, X12)
+    CHACHA_SHUFFLE(X9, X10, X11)
+    CHACHA_QROUND_SSE2(X8, X9, X10, X11, X12)
+    CHACHA_SHUFFLE(X11, X10, X9)
     SUBQ $2, R8
-    JA chacha_final_loop_64
+    JA chacha_loop_64
     
-    PADDL X0, X4
-    PADDL X1, X5
-    PADDL X2, X6
-    PADDL X3, X7
+    PADDL X0, X8
+    PADDL X1, X9
+    PADDL X2, X10
+    PADDL X3, X11
     PADDQ X15, X3
     CMPQ CX, $64
     JB less_than_64
 
-    XOR(DI, SI, 0, X4, X5, X6, X7, X12)
+    XOR(DI, SI, 0, X8, X9, X10, X11, X12)
     SUBQ $64, CX
     JMP done
 
 less_than_64:
-    MOVOU X4, 0(BX)
-    MOVOU X5, 16(BX)
-    MOVOU X6, 32(BX)
-    MOVOU X7, 48(BX)
+    MOVOU X8, 0(BX)
+    MOVOU X9, 16(BX)
+    MOVOU X10, 32(BX)
+    MOVOU X11, 48(BX)
     XORQ R11, R11
     XORQ R12, R12
     MOVQ CX, BP
@@ -203,11 +386,12 @@ xor_loop:
 
 done:
     MOVOU X3, 48(AX)
+    MOVQ R9, SP
     MOVQ CX, ret+72(FP)
     RET
 
 // func xorKeyStreamSSSE3(dst, src []byte, block, state *[64]byte, rounds int) int
-TEXT ·xorKeyStreamSSSE3(SB),4,$0-80
+TEXT ·xorKeyStreamSSSE3(SB),4,$144-80
 	MOVQ dst_base+0(FP), DI
 	MOVQ src_base+24(FP), SI
 	MOVQ src_len+32(FP), CX
@@ -215,22 +399,225 @@ TEXT ·xorKeyStreamSSSE3(SB),4,$0-80
     MOVQ state+56(FP), AX
 	MOVQ rounds+64(FP), DX
 
+    MOVQ SP, R9
+    ADDQ $16, SP
+    ANDQ $-16, SP
+
     MOVOU 0(AX), X0
     MOVOU 16(AX), X1
     MOVOU 32(AX), X2
     MOVOU 48(AX), X3
-    MOVOU ·rol16<>(SB), X13
-    MOVOU ·rol8<>(SB), X14
-    MOVOU ·one<>(SB), X15
+
+    TESTQ CX, CX
+    JZ done
 
     CMPQ CX, $64
     JBE between_0_and_64
 
-at_least_128:
+    CMPQ CX, $128
+    JBE between_64_and_128
+
+    CMPQ CX, $192
+    JBE between_128_and_192
+
+    MOVOU ·rol16<>(SB), X13
+    MOVOU ·rol8<>(SB), X14
+    MOVOU ·one<>(SB), X15
+    MOVO X0, 0(SP)
+    MOVO X1, 16(SP)
+    MOVO X2, 32(SP)
+    MOVO X3, 48(SP)
+    MOVO X15, 64(SP)
+    MOVO X13, 96(SP)
+    MOVO X14, 112(SP)
+
+at_least_256:
     MOVO X0, X4
     MOVO X1, X5
     MOVO X2, X6
-    MOVO X3, X7    
+    MOVO X3, X7
+    PADDQ 64(SP), X7    
+    MOVO X0, X12
+    MOVO X1, X13
+    MOVO X2, X14
+    MOVO X7, X15
+    PADDQ 64(SP), X15
+    MOVO X0, X8
+    MOVO X1, X9
+    MOVO X2, X10
+    MOVO X15, X11
+    PADDQ 64(SP), X11
+    
+    MOVQ DX, R8
+chacha_loop_256:
+    MOVO X8, 80(SP)
+    CHACHA_QROUND_SSSE3(X0, X1, X2, X3, X8, 96(SP), 112(SP))
+    CHACHA_QROUND_SSSE3(X4, X5, X6, X7, X8, 96(SP), 112(SP))
+    MOVO 80(SP), X8
+
+    MOVO X0, 80(SP)
+    CHACHA_QROUND_SSSE3(X12, X13, X14, X15, X0, 96(SP), 112(SP))
+    CHACHA_QROUND_SSSE3(X8, X9, X10, X11, X0, 96(SP), 112(SP))
+    MOVO 80(SP), X0
+    
+    CHACHA_SHUFFLE(X1, X2, X3)
+    CHACHA_SHUFFLE(X5, X6, X7)
+    CHACHA_SHUFFLE(X13, X14, X15)
+    CHACHA_SHUFFLE(X9, X10, X11)
+    
+    MOVO X8, 80(SP)
+    CHACHA_QROUND_SSSE3(X0, X1, X2, X3, X8, 96(SP), 112(SP))
+    CHACHA_QROUND_SSSE3(X4, X5, X6, X7, X8, 96(SP), 112(SP))
+    MOVO 80(SP), X8
+    
+    MOVO X0, 80(SP)
+    CHACHA_QROUND_SSSE3(X12, X13, X14, X15, X0, 96(SP), 112(SP))
+    CHACHA_QROUND_SSSE3(X8, X9, X10, X11, X0, 96(SP), 112(SP))
+    MOVO 80(SP), X0
+
+    CHACHA_SHUFFLE(X3, X2, X1)
+    CHACHA_SHUFFLE(X7, X6, X5)
+    CHACHA_SHUFFLE(X15, X14, X13)
+    CHACHA_SHUFFLE(X11, X10, X9)
+    SUBQ $2, R8
+    JA chacha_loop_256
+
+    MOVO X8, 80(SP)
+    
+    PADDL 0(SP), X0
+    PADDL 16(SP), X1
+    PADDL 32(SP), X2
+    PADDL 48(SP), X3
+    XOR(DI, SI, 0, X0, X1, X2, X3, X8) 
+    MOVO 0(SP), X0
+    MOVO 16(SP), X1
+    MOVO 32(SP), X2
+    MOVO 48(SP), X3
+    PADDQ 64(SP), X3
+
+    PADDL X0, X4
+    PADDL X1, X5
+    PADDL X2, X6
+    PADDL X3, X7
+    PADDQ 64(SP), X3
+    XOR(DI, SI, 64, X4, X5, X6, X7, X8)
+    
+    MOVO 80(SP), X8
+
+    PADDL X0, X12
+    PADDL X1, X13
+    PADDL X2, X14
+    PADDL X3, X15
+    PADDQ 64(SP), X3
+    XOR(DI, SI, 128, X12, X13, X14, X15, X4)
+    
+    PADDL X0, X8
+    PADDL X1, X9
+    PADDL X2, X10
+    PADDL X3, X11
+    PADDQ 64(SP), X3
+
+    ADDQ $192, SI
+    ADDQ $192, DI
+    SUBQ $192, CX
+    CMPQ CX, $64
+    JB less_than_64
+
+    XOR(DI, SI, 0, X8, X9, X10, X11, X4)
+    MOVO X3, 48(SP)
+    ADDQ $64, SI
+    ADDQ $64, DI
+    SUBQ $64, CX
+    CMPQ CX, $192
+    JA at_least_256
+    
+    TESTQ CX, CX
+    JZ done
+    CMPQ CX, $64
+    JBE between_0_and_64
+    CMPQ CX, $128
+    JBE between_64_and_128
+
+between_128_and_192:
+    MOVO X3, 48(AX)
+    MOVOU ·rol16<>(SB), X13
+    MOVOU ·rol8<>(SB), X14
+    MOVOU ·one<>(SB), X15
+    MOVO X0, X4
+    MOVO X1, X5
+    MOVO X2, X6
+    MOVO X3, X7
+    PADDQ X15, X7
+    MOVO X0, X8
+    MOVO X1, X9
+    MOVO X2, X10
+    MOVO X7, X11
+    PADDQ X15, X11
+
+    MOVQ DX, R8
+chacha_loop_192:
+    CHACHA_QROUND_SSSE3(X0, X1, X2, X3, X12, X13, X14)
+    CHACHA_QROUND_SSSE3(X4, X5, X6, X7, X12, X13, X14)
+    CHACHA_QROUND_SSSE3(X8, X9, X10, X11, X12, X13, X14)
+    CHACHA_SHUFFLE(X1, X2, X3)
+    CHACHA_SHUFFLE(X5, X6, X7)
+    CHACHA_SHUFFLE(X9, X10, X11)
+    CHACHA_QROUND_SSSE3(X0, X1, X2, X3, X12, X13, X14)
+    CHACHA_QROUND_SSSE3(X4, X5, X6, X7, X12, X13, X14)
+    CHACHA_QROUND_SSSE3(X8, X9, X10, X11, X12, X13, X14)
+    CHACHA_SHUFFLE(X3, X2, X1)
+    CHACHA_SHUFFLE(X7, X6, X5)
+    CHACHA_SHUFFLE(X11, X10, X9)
+    SUBQ $2, R8
+    JA chacha_loop_192
+
+    MOVOU 0(AX), X12
+    PADDL X12, X0
+    MOVOU 16(AX), X12
+    PADDL X12, X1
+    MOVOU 32(AX), X12
+    PADDL X12, X2
+    MOVOU 48(AX), X12
+    PADDL X12, X3
+    XOR(DI, SI, 0, X0, X1, X2, X3, X12)
+
+    MOVOU 0(AX), X0
+    MOVOU 16(AX), X1
+    MOVOU 32(AX), X2
+    MOVOU 48(AX), X3
+    PADDQ X15, X3
+    
+    PADDL X0, X4
+    PADDL X1, X5
+    PADDL X2, X6
+    PADDL X3, X7
+    PADDQ X15, X3
+    XOR(DI, SI, 64, X4, X5, X6, X7, X12)
+
+    PADDL X0, X8
+    PADDL X1, X9
+    PADDL X2, X10
+    PADDL X3, X11
+    PADDQ X15, X3
+    
+    ADDQ $128, SI
+    ADDQ $128, DI
+    SUBQ $128, CX
+    CMPQ CX, $64
+    JB less_than_64
+    
+    XOR(DI, SI, 0, X8, X9, X10, X11, X12)
+    SUBQ $64, CX
+    JMP done
+
+between_64_and_128:
+    MOVOU ·rol16<>(SB), X13
+    MOVOU ·rol8<>(SB), X14
+    MOVOU ·one<>(SB), X15
+    MOVO X0, X4
+    MOVO X1, X5
+    MOVO X2, X6
+    MOVO X3, X7 
     MOVO X0, X8
     MOVO X1, X9
     MOVO X2, X10
@@ -260,64 +647,52 @@ chacha_loop_128:
     PADDL X2, X10
     PADDL X3, X11
     PADDQ X15, X3
-
-    CMPQ CX, $128
-    JB less_than_128
-
     XOR(DI, SI, 0, X4, X5, X6, X7, X12)
-    XOR(DI, SI, 64, X8, X9, X10, X11, X12)
-    ADDQ $128, SI
-    ADDQ $128, DI
-    SUBQ $128, CX
-    CMPQ CX, $64
-    JA at_least_128
     
-    TESTQ CX, CX
-    JZ done
-    JMP between_0_and_64
-
-less_than_128:
-    XOR(DI, SI, 0, X4, X5, X6, X7, X12)
     ADDQ $64, SI
     ADDQ $64, DI
     SUBQ $64, CX
-    MOVO X8, X4
-    MOVO X9, X5
-    MOVO X10, X6
-    MOVO X11, X7
-    JMP less_than_64
+    CMPQ CX, $64
+    JB less_than_64
+
+    XOR(DI, SI, 0, X8, X9, X10, X11, X12)
+    SUBQ $64, CX
+    JMP done
 
 between_0_and_64:
-    MOVO X0, X4
-    MOVO X1, X5
-    MOVO X2, X6
-    MOVO X3, X7
+    MOVOU ·rol16<>(SB), X13
+    MOVOU ·rol8<>(SB), X14
+    MOVOU ·one<>(SB), X15
+    MOVO X0, X8
+    MOVO X1, X9
+    MOVO X2, X10
+    MOVO X3, X11
     MOVQ DX, R8 
-chacha_final_loop_64:
-    CHACHA_QROUND_SSSE3(X4, X5, X6, X7, X12, X13, X14)
-    CHACHA_SHUFFLE(X5, X6, X7)
-    CHACHA_QROUND_SSSE3(X4, X5, X6, X7, X12, X13, X14)
-    CHACHA_SHUFFLE(X7, X6, X5)
+chacha_loop_64:
+    CHACHA_QROUND_SSSE3(X8, X9, X10, X11, X12, X13, X14)
+    CHACHA_SHUFFLE(X9, X10, X11)
+    CHACHA_QROUND_SSSE3(X8, X9, X10, X11, X12, X13, X14)
+    CHACHA_SHUFFLE(X11, X10, X9)
     SUBQ $2, R8
-    JA chacha_final_loop_64
+    JA chacha_loop_64
     
-    PADDL X0, X4
-    PADDL X1, X5
-    PADDL X2, X6
-    PADDL X3, X7
+    PADDL X0, X8
+    PADDL X1, X9
+    PADDL X2, X10
+    PADDL X3, X11
     PADDQ X15, X3
     CMPQ CX, $64
     JB less_than_64
 
-    XOR(DI, SI, 0, X4, X5, X6, X7, X12)
+    XOR(DI, SI, 0, X8, X9, X10, X11, X12)
     SUBQ $64, CX
     JMP done
 
 less_than_64:
-    MOVOU X4, 0(BX)
-    MOVOU X5, 16(BX)
-    MOVOU X6, 32(BX)
-    MOVOU X7, 48(BX)
+    MOVOU X8, 0(BX)
+    MOVOU X9, 16(BX)
+    MOVOU X10, 32(BX)
+    MOVOU X11, 48(BX)
     XORQ R11, R11
     XORQ R12, R12
     MOVQ CX, BP
@@ -333,6 +708,7 @@ xor_loop:
     JA xor_loop
 
 done:
+    MOVQ R9, SP
     MOVOU X3, 48(AX)
     MOVQ CX, ret+72(FP)
     RET
