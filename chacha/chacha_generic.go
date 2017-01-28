@@ -29,9 +29,6 @@ func xorKeyStreamGeneric(dst, src []byte, block, state *[64]byte, rounds int) in
 	return n
 }
 
-// chachaGeneric generates 64 byte keystream from the given state
-// performing the provided number of rounds and writes them to dst.
-// This function increments the counter of state.
 func chachaGeneric(dst *[64]byte, state *[64]byte, rounds int) {
 	v00 := binary.LittleEndian.Uint32(state[0:])
 	v01 := binary.LittleEndian.Uint32(state[4:])

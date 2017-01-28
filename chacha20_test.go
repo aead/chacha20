@@ -4,14 +4,52 @@
 
 package chacha20
 
-import "testing"
+import (
+	"bytes"
+	"encoding/hex"
+	"testing"
+)
 
-func benchmarkCipher(b *testing.B, size int) {
-	var (
-		key   [32]byte
-		nonce [NonceSize]byte
-	)
-	c := NewCipher(nonce[:], &key)
+func toHex(bits []byte) string {
+	return hex.EncodeToString(bits)
+}
+
+func fromHex(bits string) []byte {
+	b, err := hex.DecodeString(bits)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func TestVectors(t *testing.T) {
+	for i, v := range vectors {
+		if len(v.plaintext) == 0 {
+			v.plaintext = make([]byte, len(v.ciphertext))
+		}
+
+		dst := make([]byte, len(v.ciphertext))
+		var key [32]byte
+		copy(key[:], v.key)
+
+		XORKeyStream(dst, v.plaintext, v.nonce, &key)
+		if !bytes.Equal(dst, v.ciphertext) {
+			t.Errorf("Test %d: ciphertext mismatch:\n \t got:  %s\n \t want: %s", i, toHex(dst), toHex(v.ciphertext))
+		}
+
+		c := NewCipher(v.nonce, &key)
+		c.XORKeyStream(dst[:1], v.plaintext[:1])
+		c.XORKeyStream(dst[1:], v.plaintext[1:])
+		if !bytes.Equal(dst, v.ciphertext) {
+			t.Errorf("Test %d: ciphertext mismatch:\n \t got:  %s\n \t want: %s", i, toHex(dst), toHex(v.ciphertext))
+		}
+	}
+}
+
+func benchmarkCipher(b *testing.B, size int, nonceSize int) {
+	var key [32]byte
+	nonce := make([]byte, nonceSize)
+	c := NewCipher(nonce, &key)
 	buf := make([]byte, size)
 
 	b.SetBytes(int64(len(buf)))
@@ -21,11 +59,9 @@ func benchmarkCipher(b *testing.B, size int) {
 	}
 }
 
-func benchmarkXORKeyStream(b *testing.B, size int) {
-	var (
-		key   [32]byte
-		nonce [NonceSize]byte
-	)
+func benchmarkXORKeyStream(b *testing.B, size int, nonceSize int) {
+	var key [32]byte
+	nonce := make([]byte, nonceSize)
 	buf := make([]byte, size)
 	b.SetBytes(int64(len(buf)))
 	b.ResetTimer()
@@ -34,7 +70,34 @@ func benchmarkXORKeyStream(b *testing.B, size int) {
 	}
 }
 
-func BenchmarkCipher64(b *testing.B)       { benchmarkCipher(b, 64) }
-func BenchmarkCipher1K(b *testing.B)       { benchmarkCipher(b, 1024) }
-func BenchmarkXORKeyStream64(b *testing.B) { benchmarkXORKeyStream(b, 64) }
-func BenchmarkXORKeyStream1K(b *testing.B) { benchmarkXORKeyStream(b, 1024) }
+func BenchmarkChaCha20_64(b *testing.B)              { benchmarkCipher(b, 64, NonceSize) }
+func BenchmarkChaCha20_1K(b *testing.B)              { benchmarkCipher(b, 1024, NonceSize) }
+func BenchmarkXChaCha20_64(b *testing.B)             { benchmarkXORKeyStream(b, 64, XNonceSize) }
+func BenchmarkXChaCha20_1K(b *testing.B)             { benchmarkXORKeyStream(b, 1024, XNonceSize) }
+func BenchmarkXORKeyStream64(b *testing.B)           { benchmarkXORKeyStream(b, 64, NonceSize) }
+func BenchmarkXORKeyStream1K(b *testing.B)           { benchmarkXORKeyStream(b, 1024, NonceSize) }
+func BenchmarkXChaCha20_XORKeyStream64(b *testing.B) { benchmarkXORKeyStream(b, 64, XNonceSize) }
+func BenchmarkXChaCha20_XORKeyStream1K(b *testing.B) { benchmarkXORKeyStream(b, 1024, XNonceSize) }
+
+var vectors = []struct {
+	key, nonce, plaintext, ciphertext []byte
+}{
+	{
+		fromHex("0000000000000000000000000000000000000000000000000000000000000000"),
+		fromHex("0000000000000000"),
+		nil,
+		fromHex("76b8e0ada0f13d90405d6ae55386bd28bdd219b8a08ded1aa836efcc8b770dc7da41597c5157488d7724e03fb8d84a376a43b8f41518a11cc387b669b2ee6586"),
+	},
+	{
+		fromHex("0000000000000000000000000000000000000000000000000000000000000000"),
+		fromHex("000000000000000000000000"),
+		nil,
+		fromHex("76b8e0ada0f13d90405d6ae55386bd28bdd219b8a08ded1aa836efcc8b770dc7da41597c5157488d7724e03fb8d84a376a43b8f41518a11cc387b669b2ee6586"),
+	},
+	{
+		fromHex("0000000000000000000000000000000000000000000000000000000000000000"),
+		fromHex("000000000000000000000000000000000000000000000000"),
+		nil,
+		fromHex("bcd02a18bf3f01d19292de30a7a8fdaca4b65e50a6002cc72cd6d2f7c91ac3d5728f83e0aad2bfcf9abd2d2db58faedd65015dd83fc09b131e271043019e8e0f"),
+	},
+}
