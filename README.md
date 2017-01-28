@@ -5,10 +5,10 @@
 ChaCha is a stream cipher family created by Daniel J. Bernstein. The most common ChaCha cipher is ChaCha20 (20 rounds). 
 ChaCha20 is standardized in [RFC 7539](https://tools.ietf.org/html/rfc7539 "RFC 7539").
 
-This package implements the three ChaCha versions:  
-    - ChaCha20 with a 64 bit nonce (can en/decrypt up to 2^64 * 64 bytes for one key-nonce combination)  
-    - ChaCha20 with a 96 bit nonce (can en/decrypt up to 2^32 * 64 bytes ~ 256 GB for one key-nonce combination)  
-    - XChaCha20 with a 192 bit nonce (can en/decrypt up to 2^64 * 64 bytes for one key-nonce combination)  
+This package implements the three ChaCha versions:
+- ChaCha20 with a 64 bit nonce (can en/decrypt up to 2^64 * 64 bytes for one key-nonce combination)  
+- ChaCha20 with a 96 bit nonce (can en/decrypt up to 2^32 * 64 bytes ~ 256 GB for one key-nonce combination)  
+- XChaCha20 with a 192 bit nonce (can en/decrypt up to 2^64 * 64 bytes for one key-nonce combination)  
 
 Furthermore the chacha subpackage implements ChaCha20/12 and ChaCha20/8.
 These versions use 12 or 8 rounds instead of 20.
