@@ -77,6 +77,7 @@ type Cipher struct {
 	state, block [64]byte
 	off          int
 	rounds       int // 20 for ChaCha20
+	noncesize    int
 }
 
 // NewCipher returns a new *chacha.Cipher implementing the ChaCha/X (X = 8, 12 or 20)
@@ -87,8 +88,14 @@ func NewCipher(nonce []byte, key *[32]byte, rounds int) *Cipher {
 	}
 
 	c := new(Cipher)
-	c.rounds = rounds
 	setup(&(c.state), nonce, key)
+	c.rounds = rounds
+
+	if len(nonce) == INonceSize {
+		c.noncesize = INonceSize
+	} else {
+		c.noncesize = NonceSize
+	}
 
 	return c
 }
@@ -125,5 +132,10 @@ func (c *Cipher) XORKeyStream(dst, src []byte) {
 }
 
 func (c *Cipher) SetCounter(ctr uint64) {
-	binary.LittleEndian.PutUint64(c.state[48:], ctr)
+	if c.noncesize == INonceSize {
+		binary.LittleEndian.PutUint32(c.state[48:], uint32(ctr))
+	} else {
+		binary.LittleEndian.PutUint64(c.state[48:], ctr)
+	}
+	c.off = 0
 }
