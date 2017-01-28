@@ -94,7 +94,7 @@ TEXT ·xorKeyStreamSSE2(SB),4,$112-80
     MOVOU 16(AX), X1
     MOVOU 32(AX), X2
     MOVOU 48(AX), X3
-    MOVO X3, 48(SP)
+    MOVOU ·one<>(SB), X15
 
     TESTQ CX, CX
     JZ done
@@ -105,15 +105,16 @@ TEXT ·xorKeyStreamSSE2(SB),4,$112-80
     CMPQ CX, $128
     JBE between_64_and_128
 
-    CMPQ CX, $192
-    JBE between_128_and_192
-
-    MOVOU ·one<>(SB), X15
     MOVO X0, 0(SP)
     MOVO X1, 16(SP)
     MOVO X2, 32(SP)
+    MOVO X3, 48(SP)
     MOVO X15, 64(SP)
 
+    CMPQ CX, $192
+    JBE between_128_and_192
+
+    MOVQ $192, R14
 at_least_256:
     MOVO X0, X4
     MOVO X1, X5
@@ -171,7 +172,8 @@ chacha_loop_256:
     PADDL 16(SP), X1
     PADDL 32(SP), X2
     PADDL 48(SP), X3
-    XOR(DI, SI, 0, X0, X1, X2, X3, X8) 
+    XOR(DI, SI, 0, X0, X1, X2, X3, X8)
+
     MOVO 0(SP), X0
     MOVO 16(SP), X1
     MOVO 32(SP), X2
@@ -185,45 +187,43 @@ chacha_loop_256:
     PADDQ 64(SP), X3
     XOR(DI, SI, 64, X4, X5, X6, X7, X8)
     
+    MOVO 64(SP), X5
     MOVO 80(SP), X8
 
     PADDL X0, X12
     PADDL X1, X13
     PADDL X2, X14
     PADDL X3, X15
-    PADDQ 64(SP), X3
+    PADDQ X5, X3
     XOR(DI, SI, 128, X12, X13, X14, X15, X4)
     
     PADDL X0, X8
     PADDL X1, X9
     PADDL X2, X10
     PADDL X3, X11
-    PADDQ 64(SP), X3
+    PADDQ X5, X3
 
-    ADDQ $192, SI
-    ADDQ $192, DI
-    SUBQ $192, CX
-    CMPQ CX, $64
+    CMPQ CX, $256
     JB less_than_64
 
-    XOR(DI, SI, 0, X8, X9, X10, X11, X4)
+    XOR(DI, SI, 192, X8, X9, X10, X11, X4)
     MOVO X3, 48(SP)
-    ADDQ $64, SI
-    ADDQ $64, DI
-    SUBQ $64, CX
+    ADDQ $256, SI
+    ADDQ $256, DI
+    SUBQ $256, CX
     CMPQ CX, $192
     JA at_least_256
     
     TESTQ CX, CX
     JZ done
+    MOVO 64(SP), X15
     CMPQ CX, $64
     JBE between_0_and_64
     CMPQ CX, $128
     JBE between_64_and_128
 
 between_128_and_192:
-    MOVO X3, 48(AX)
-    MOVOU ·one<>(SB), X15
+    MOVQ $128, R14
     MOVO X0, X4
     MOVO X1, X5
     MOVO X2, X6
@@ -252,20 +252,16 @@ chacha_loop_192:
     SUBQ $2, R8
     JA chacha_loop_192
 
-    MOVOU 0(AX), X12
-    PADDL X12, X0
-    MOVOU 16(AX), X12
-    PADDL X12, X1
-    MOVOU 32(AX), X12
-    PADDL X12, X2
-    MOVOU 48(AX), X12
-    PADDL X12, X3
+    PADDL 0(SP), X0
+    PADDL 16(SP), X1
+    PADDL 32(SP), X2
+    PADDL 48(SP), X3
     XOR(DI, SI, 0, X0, X1, X2, X3, X12)
 
-    MOVOU 0(AX), X0
-    MOVOU 16(AX), X1
-    MOVOU 32(AX), X2
-    MOVOU 48(AX), X3
+    MOVO 0(SP), X0
+    MOVO 16(SP), X1
+    MOVO 32(SP), X2
+    MOVO 48(SP), X3
     PADDQ X15, X3
     
     PADDL X0, X4
@@ -281,18 +277,15 @@ chacha_loop_192:
     PADDL X3, X11
     PADDQ X15, X3
     
-    ADDQ $128, SI
-    ADDQ $128, DI
-    SUBQ $128, CX
-    CMPQ CX, $64
+    CMPQ CX, $192
     JB less_than_64
     
-    XOR(DI, SI, 0, X8, X9, X10, X11, X12)
-    SUBQ $64, CX
+    XOR(DI, SI, 128, X8, X9, X10, X11, X12)
+    SUBQ $192, CX
     JMP done
 
 between_64_and_128:
-    MOVOU ·one<>(SB), X15
+    MOVQ $64, R14
     MOVO X0, X4
     MOVO X1, X5
     MOVO X2, X6
@@ -328,18 +321,15 @@ chacha_loop_128:
     PADDQ X15, X3
     XOR(DI, SI, 0, X4, X5, X6, X7, X12)
     
-    ADDQ $64, SI
-    ADDQ $64, DI
-    SUBQ $64, CX
-    CMPQ CX, $64
+    CMPQ CX, $128
     JB less_than_64
 
-    XOR(DI, SI, 0, X8, X9, X10, X11, X12)
-    SUBQ $64, CX
+    XOR(DI, SI, 64, X8, X9, X10, X11, X12)
+    SUBQ $128, CX
     JMP done
 
 between_0_and_64:
-    MOVOU ·one<>(SB), X15
+    MOVQ $0, R14
     MOVO X0, X8
     MOVO X1, X9
     MOVO X2, X10
@@ -366,6 +356,10 @@ chacha_loop_64:
     JMP done
 
 less_than_64:
+    // R14 contains the num of bytes already xor'd
+    ADDQ R14, SI
+    ADDQ R14, DI
+    SUBQ R14, CX
     MOVOU X8, 0(BX)
     MOVOU X9, 16(BX)
     MOVOU X10, 32(BX)
@@ -407,6 +401,9 @@ TEXT ·xorKeyStreamSSSE3(SB),4,$144-80
     MOVOU 16(AX), X1
     MOVOU 32(AX), X2
     MOVOU 48(AX), X3
+    MOVOU ·rol16<>(SB), X13
+    MOVOU ·rol8<>(SB), X14
+    MOVOU ·one<>(SB), X15
 
     TESTQ CX, CX
     JZ done
@@ -417,20 +414,18 @@ TEXT ·xorKeyStreamSSSE3(SB),4,$144-80
     CMPQ CX, $128
     JBE between_64_and_128
 
-    CMPQ CX, $192
-    JBE between_128_and_192
-
-    MOVOU ·rol16<>(SB), X13
-    MOVOU ·rol8<>(SB), X14
-    MOVOU ·one<>(SB), X15
     MOVO X0, 0(SP)
     MOVO X1, 16(SP)
     MOVO X2, 32(SP)
     MOVO X3, 48(SP)
     MOVO X15, 64(SP)
+
+    CMPQ CX, $192
+    JBE between_128_and_192
+   
     MOVO X13, 96(SP)
     MOVO X14, 112(SP)
-
+    MOVQ $192, R14
 at_least_256:
     MOVO X0, X4
     MOVO X1, X5
@@ -502,47 +497,45 @@ chacha_loop_256:
     PADDQ 64(SP), X3
     XOR(DI, SI, 64, X4, X5, X6, X7, X8)
     
+    MOVO 64(SP), X5
     MOVO 80(SP), X8
 
     PADDL X0, X12
     PADDL X1, X13
     PADDL X2, X14
     PADDL X3, X15
-    PADDQ 64(SP), X3
+    PADDQ X5, X3
     XOR(DI, SI, 128, X12, X13, X14, X15, X4)
     
     PADDL X0, X8
     PADDL X1, X9
     PADDL X2, X10
     PADDL X3, X11
-    PADDQ 64(SP), X3
+    PADDQ X5, X3
 
-    ADDQ $192, SI
-    ADDQ $192, DI
-    SUBQ $192, CX
-    CMPQ CX, $64
+    CMPQ CX, $256
     JB less_than_64
 
-    XOR(DI, SI, 0, X8, X9, X10, X11, X4)
+    XOR(DI, SI, 192, X8, X9, X10, X11, X4)
     MOVO X3, 48(SP)
-    ADDQ $64, SI
-    ADDQ $64, DI
-    SUBQ $64, CX
+    ADDQ $256, SI
+    ADDQ $256, DI
+    SUBQ $256, CX
     CMPQ CX, $192
     JA at_least_256
     
     TESTQ CX, CX
     JZ done
+    MOVOU ·rol16<>(SB), X13
+    MOVOU ·rol8<>(SB), X14
+    MOVO 64(SP), X15
     CMPQ CX, $64
     JBE between_0_and_64
     CMPQ CX, $128
     JBE between_64_and_128
 
 between_128_and_192:
-    MOVO X3, 48(AX)
-    MOVOU ·rol16<>(SB), X13
-    MOVOU ·rol8<>(SB), X14
-    MOVOU ·one<>(SB), X15
+    MOVQ $128, R14
     MOVO X0, X4
     MOVO X1, X5
     MOVO X2, X6
@@ -571,20 +564,16 @@ chacha_loop_192:
     SUBQ $2, R8
     JA chacha_loop_192
 
-    MOVOU 0(AX), X12
-    PADDL X12, X0
-    MOVOU 16(AX), X12
-    PADDL X12, X1
-    MOVOU 32(AX), X12
-    PADDL X12, X2
-    MOVOU 48(AX), X12
-    PADDL X12, X3
+    PADDL 0(SP), X0
+    PADDL 16(SP), X1
+    PADDL 32(SP), X2
+    PADDL 48(SP), X3
     XOR(DI, SI, 0, X0, X1, X2, X3, X12)
 
-    MOVOU 0(AX), X0
-    MOVOU 16(AX), X1
-    MOVOU 32(AX), X2
-    MOVOU 48(AX), X3
+    MOVO 0(SP), X0
+    MOVO 16(SP), X1
+    MOVO 32(SP), X2
+    MOVO 48(SP), X3
     PADDQ X15, X3
     
     PADDL X0, X4
@@ -600,20 +589,15 @@ chacha_loop_192:
     PADDL X3, X11
     PADDQ X15, X3
     
-    ADDQ $128, SI
-    ADDQ $128, DI
-    SUBQ $128, CX
-    CMPQ CX, $64
+    CMPQ CX, $192
     JB less_than_64
     
-    XOR(DI, SI, 0, X8, X9, X10, X11, X12)
-    SUBQ $64, CX
+    XOR(DI, SI, 128, X8, X9, X10, X11, X12)
+    SUBQ $192, CX
     JMP done
 
 between_64_and_128:
-    MOVOU ·rol16<>(SB), X13
-    MOVOU ·rol8<>(SB), X14
-    MOVOU ·one<>(SB), X15
+    MOVQ $64, R14
     MOVO X0, X4
     MOVO X1, X5
     MOVO X2, X6
@@ -649,20 +633,15 @@ chacha_loop_128:
     PADDQ X15, X3
     XOR(DI, SI, 0, X4, X5, X6, X7, X12)
     
-    ADDQ $64, SI
-    ADDQ $64, DI
-    SUBQ $64, CX
-    CMPQ CX, $64
+    CMPQ CX, $128
     JB less_than_64
 
-    XOR(DI, SI, 0, X8, X9, X10, X11, X12)
-    SUBQ $64, CX
+    XOR(DI, SI, 64, X8, X9, X10, X11, X12)
+    SUBQ $128, CX
     JMP done
 
 between_0_and_64:
-    MOVOU ·rol16<>(SB), X13
-    MOVOU ·rol8<>(SB), X14
-    MOVOU ·one<>(SB), X15
+    MOVQ $0, R14
     MOVO X0, X8
     MOVO X1, X9
     MOVO X2, X10
@@ -689,6 +668,10 @@ chacha_loop_64:
     JMP done
 
 less_than_64:
+    // R14 contains the num of bytes already xor'd
+    ADDQ R14, SI
+    ADDQ R14, DI
+    SUBQ R14, CX
     MOVOU X8, 0(BX)
     MOVOU X9, 16(BX)
     MOVOU X10, 32(BX)

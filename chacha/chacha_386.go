@@ -35,7 +35,7 @@ func hChaCha20SSE2(out *[32]byte, nonce *[16]byte, key *[32]byte)
 //go:noescape
 func hChaCha20SSSE3(out *[32]byte, nonce *[16]byte, key *[32]byte)
 
-func HChaCha20(out *[32]byte, nonce *[16]byte, key *[32]byte) {
+func hChaCha20(out *[32]byte, nonce *[16]byte, key *[32]byte) {
 	if useSSSE3 {
 		hChaCha20SSSE3(out, nonce, key)
 	} else if useSSE2 {

@@ -24,24 +24,26 @@ func hChaCha20SSE2(out *[32]byte, nonce *[16]byte, key *[32]byte)
 //go:noescape
 func hChaCha20SSSE3(out *[32]byte, nonce *[16]byte, key *[32]byte)
 
-func HChaCha20(out *[32]byte, nonce *[16]byte, key *[32]byte) {
-	if useSSSE3 {
-		hChaCha20SSSE3(out, nonce, key)
-	} else {
-		hChaCha20SSE2(out, nonce, key)
-	}
-}
-
 //go:noescape
 func xorKeyStreamSSE2(dst, src []byte, block, state *[64]byte, rounds int) int
 
 //go:noescape
 func xorKeyStreamSSSE3(dst, src []byte, block, state *[64]byte, rounds int) int
 
+func hChaCha20(out *[32]byte, nonce *[16]byte, key *[32]byte) {
+	if useSSSE3 {
+		hChaCha20SSSE3(out, nonce, key)
+	} else if useSSE2 { // on amd64 this is  always true - this is used to test generic on amd64
+		hChaCha20SSE2(out, nonce, key)
+	} else {
+		hChaCha20Generic(out, nonce, key)
+	}
+}
+
 func xorKeyStream(dst, src []byte, block, state *[64]byte, rounds int) int {
 	if useSSSE3 {
 		return xorKeyStreamSSSE3(dst, src, block, state, rounds)
-	} else if useSSE2 { // on amd64 this is  always true - this is testing generic on amd64
+	} else if useSSE2 { // on amd64 this is  always true - this is used to test generic on amd64
 		return xorKeyStreamSSE2(dst, src, block, state, rounds)
 	}
 	return xorKeyStreamGeneric(dst, src, block, state, rounds)

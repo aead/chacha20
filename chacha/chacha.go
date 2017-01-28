@@ -23,6 +23,35 @@ var (
 	useAVX2  bool
 )
 
+func setup(state *[64]byte, nonce []byte, key *[32]byte) {
+	var Nonce [16]byte
+	switch len(nonce) {
+	case NonceSize:
+		copy(Nonce[8:], nonce)
+		initialize(state, key, &Nonce)
+	case INonceSize:
+		copy(Nonce[4:], nonce)
+		initialize(state, key, &Nonce)
+	case XNonceSize:
+		var tmpKey [32]byte
+		var hNonce [16]byte
+
+		copy(hNonce[:], nonce[:16])
+		hChaCha20(&tmpKey, &hNonce, key)
+		copy(Nonce[8:], nonce[16:])
+		initialize(state, &tmpKey, &Nonce)
+
+		// BUG(aead): A "good" compiler will remove this (optimizations)
+		//			  But using the provided key instead of tmpKey,
+		//			  will change the key (-> probably confuses users)
+		for i := range tmpKey {
+			tmpKey[i] = 0
+		}
+	default:
+		panic("invalid nonce size") // TODO (add error handling)
+	}
+}
+
 // XORKeyStream crypts bytes from src to dst using the given key, nonce and counter.
 // The rounds argument specifies the number of rounds performed for keystream
 // generation - valid values are 8, 12 or 20. The src and dst may be the same slice
@@ -34,25 +63,12 @@ func XORKeyStream(dst, src, nonce []byte, key *[32]byte, rounds int) {
 	if len(dst) < len(src) {
 		panic("chacha20/chacha: dst buffer is to small")
 	}
-
-	var Nonce [16]byte
-	switch len(nonce) {
-	case NonceSize:
-		copy(Nonce[8:], nonce)
-	case INonceSize:
-		copy(Nonce[4:], nonce)
-		if uint64(len(src)) > (1 << 38) {
-			panic("chacha20/chacha: src is too large")
-		}
-	case XNonceSize:
-		copy(Nonce[:], nonce[:16])
-		HChaCha20(key, &Nonce, key)
-		copy(Nonce[8:], nonce[16:])
-	default: // TODO (add error handling)
+	if len(nonce) == INonceSize && uint64(len(src)) > (1<<38) {
+		panic("chacha20/chacha: src is too large")
 	}
 
 	var block, state [64]byte
-	initialize(&state, key, &Nonce)
+	setup(&state, nonce, key)
 	xorKeyStream(dst, src, &block, &state, rounds)
 }
 
@@ -70,23 +86,9 @@ func NewCipher(nonce []byte, key *[32]byte, rounds int) *Cipher {
 		panic("chacha20/chacha: rounds must be a 8, 12, or 20")
 	}
 
-	var Nonce [16]byte
-	switch len(nonce) {
-	case NonceSize:
-		copy(Nonce[8:], nonce)
-	case INonceSize:
-		copy(Nonce[4:], nonce)
-	case XNonceSize:
-		copy(Nonce[:], nonce[:16])
-		HChaCha20(key, &Nonce, key)
-		copy(Nonce[8:], nonce[16:])
-	default:
-		panic("invalid nonce size") // TODO (add error handling)
-	}
-
 	c := new(Cipher)
 	c.rounds = rounds
-	initialize(&(c.state), key, &Nonce)
+	setup(&(c.state), nonce, key)
 
 	return c
 }

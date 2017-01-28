@@ -199,18 +199,18 @@ func hChaCha20Generic(out *[32]byte, nonce *[16]byte, key *[32]byte) {
 	v01 := sigma[1]
 	v02 := sigma[2]
 	v03 := sigma[3]
-	v04 := binary.LittleEndian.Uint32(key[0:4])
-	v05 := binary.LittleEndian.Uint32(key[4:8])
-	v06 := binary.LittleEndian.Uint32(key[8:12])
-	v07 := binary.LittleEndian.Uint32(key[12:16])
-	v08 := binary.LittleEndian.Uint32(key[16:20])
-	v09 := binary.LittleEndian.Uint32(key[20:24])
-	v10 := binary.LittleEndian.Uint32(key[24:28])
-	v11 := binary.LittleEndian.Uint32(key[28:32])
-	v12 := binary.LittleEndian.Uint32(nonce[0:4])
-	v13 := binary.LittleEndian.Uint32(nonce[4:8])
-	v14 := binary.LittleEndian.Uint32(nonce[8:12])
-	v15 := binary.LittleEndian.Uint32(nonce[12:16])
+	v04 := binary.LittleEndian.Uint32(key[0:])
+	v05 := binary.LittleEndian.Uint32(key[4:])
+	v06 := binary.LittleEndian.Uint32(key[8:])
+	v07 := binary.LittleEndian.Uint32(key[12:])
+	v08 := binary.LittleEndian.Uint32(key[16:])
+	v09 := binary.LittleEndian.Uint32(key[20:])
+	v10 := binary.LittleEndian.Uint32(key[24:])
+	v11 := binary.LittleEndian.Uint32(key[28:])
+	v12 := binary.LittleEndian.Uint32(nonce[0:])
+	v13 := binary.LittleEndian.Uint32(nonce[4:])
+	v14 := binary.LittleEndian.Uint32(nonce[8:])
+	v15 := binary.LittleEndian.Uint32(nonce[12:])
 
 	for i := 0; i < 20; i += 2 {
 		v00 += v04
@@ -311,12 +311,12 @@ func hChaCha20Generic(out *[32]byte, nonce *[16]byte, key *[32]byte) {
 		v04 = (v04 << 7) | (v04 >> 25)
 	}
 
-	binary.LittleEndian.PutUint32(out[0:4], v00)
-	binary.LittleEndian.PutUint32(out[4:8], v01)
-	binary.LittleEndian.PutUint32(out[8:12], v02)
-	binary.LittleEndian.PutUint32(out[12:16], v03)
-	binary.LittleEndian.PutUint32(out[16:20], v12)
-	binary.LittleEndian.PutUint32(out[20:24], v13)
-	binary.LittleEndian.PutUint32(out[24:28], v14)
-	binary.LittleEndian.PutUint32(out[28:32], v15)
+	binary.LittleEndian.PutUint32(out[0:], v00)
+	binary.LittleEndian.PutUint32(out[4:], v01)
+	binary.LittleEndian.PutUint32(out[8:], v02)
+	binary.LittleEndian.PutUint32(out[12:], v03)
+	binary.LittleEndian.PutUint32(out[16:], v12)
+	binary.LittleEndian.PutUint32(out[20:], v13)
+	binary.LittleEndian.PutUint32(out[24:], v14)
+	binary.LittleEndian.PutUint32(out[28:], v15)
 }

@@ -22,23 +22,28 @@ func fromHex(bits string) []byte {
 	return b
 }
 
-func testGenerate(t *testing.T) {
+func TestHChaCha20(t *testing.T) {
 	defer func(sse2, ssse3, avx2 bool) {
 		useSSE2, useSSSE3, useAVX2 = sse2, ssse3, avx2
 	}(useSSE2, useSSSE3, useAVX2)
 
-	useAVX2, useSSSE3, useSSE2 = false, false, false
-
-	k := fromHex("")
-	nonce := fromHex("")
-	plaintext := fromHex("") // make([]byte, 127)
-	dst := make([]byte, len(plaintext))
-	rounds := 20
-
-	var key [32]byte
-	copy(key[:], k)
-	XORKeyStream(dst, plaintext, nonce, &key, rounds)
-	t.Logf("%s", toHex(dst[:64]))
+	if useAVX2 {
+		t.Log("AVX2 version")
+		testHChaCha20(t)
+		useAVX2 = false
+	}
+	if useSSSE3 {
+		t.Log("SSSE3 version")
+		testHChaCha20(t)
+		useSSSE3 = false
+	}
+	if useSSE2 {
+		t.Log("SSE2 version")
+		testHChaCha20(t)
+		useSSE2 = false
+	}
+	t.Log("generic version")
+	testHChaCha20(t)
 }
 
 func TestVectors(t *testing.T) {
@@ -65,6 +70,20 @@ func TestVectors(t *testing.T) {
 	testVectors(t)
 }
 
+func testHChaCha20(t *testing.T) {
+	for i, v := range hChaCha20Vectors {
+		var key [32]byte
+		var nonce [16]byte
+		copy(key[:], v.key)
+		copy(nonce[:], v.nonce)
+
+		hChaCha20(&key, &nonce, &key)
+		if !bytes.Equal(key[:], v.keystream) {
+			t.Errorf("Test %d: keystream mismatch:\n \t got:  %s\n \t want: %s", i, toHex(key[:]), toHex(v.keystream))
+		}
+	}
+}
+
 func testVectors(t *testing.T) {
 	for i, v := range vectors {
 		if len(v.plaintext) == 0 {
@@ -87,6 +106,31 @@ func testVectors(t *testing.T) {
 			t.Errorf("Test %d: ciphertext mismatch:\n \t got:  %s\n \t want: %s", i, toHex(dst), toHex(v.ciphertext))
 		}
 	}
+}
+
+var hChaCha20Vectors = []struct {
+	key, nonce, keystream []byte
+}{
+	{
+		fromHex("0000000000000000000000000000000000000000000000000000000000000000"),
+		fromHex("000000000000000000000000000000000000000000000000"),
+		fromHex("1140704c328d1d5d0e30086cdf209dbd6a43b8f41518a11cc387b669b2ee6586"),
+	},
+	{
+		fromHex("8000000000000000000000000000000000000000000000000000000000000000"),
+		fromHex("000000000000000000000000000000000000000000000000"),
+		fromHex("7d266a7fd808cae4c02a0a70dcbfbcc250dae65ce3eae7fc210f54cc8f77df86"),
+	},
+	{
+		fromHex("0000000000000000000000000000000000000000000000000000000000000001"),
+		fromHex("000000000000000000000000000000000000000000000002"),
+		fromHex("e0c77ff931bb9163a5460c02ac281c2b53d792b1c43fea817e9ad275ae546963"),
+	},
+	{
+		fromHex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+		fromHex("000102030405060708090a0b0c0d0e0f1011121314151617"),
+		fromHex("51e3ff45a895675c4b33b46c64f4a9ace110d34df6a2ceab486372bacbd3eff6"),
+	},
 }
 
 var vectors = []struct {
@@ -161,6 +205,67 @@ var vectors = []struct {
 			"b27d5aaae0ad7ad0f9d4b6ad3b54098746d4524d38407a6deb3ab78fab78c94213668bbbd394c5de93b853178addd6b97f9fa1ec3e56c00c9ddff0a44a204241175a4cab0f961ba53ede9bdf960b94f" +
 			"9829b1f3414726429b362c5b538e391520f489b7ed8d20ae3fd49e9e259e44397514d618c96c4846be3c680bdc11c71dcbbe29ccf80d62a0938fa549391e6ea57ecbe2606790ec15d2224ae307c1442" +
 			"26b7c4e8c2f97d2a1d67852d29beba110edd445197012062a393a9c92803ad3b4f31d7bc6033ccf7932cfed3f019044d25905916777286f82f9a4cc1ffe430"),
+		20,
+	},
+	{
+		fromHex("0000000000000000000000000000000000000000000000000000000000000000"),
+		fromHex("000000000000000000000000"),
+		nil,
+		fromHex("9bf49a6a0755f953811fce125f2683d50429c3bb49e074147e0089a52eae155f0564f879d27ae3c02ce82834acfa8c793a629f2ca0de6919610be82f411326be0bd588" +
+			"41203e74fe86fc71338ce0173dc628ebb719bdcbcc151585214cc089b442258dcda14cf111c602b8971b8cc843e91e46ca905151c02744a6b017e69316b20cd67c4bdecc538e8be990c1b6425d68bfd3a" +
+			"6fe97693e4846351596cca8abf59fddd0b7f52dcc0c60a448cbf9511610b0a742f1e4d238a7a45cae054ec2"),
+		12,
+	},
+	{
+		fromHex("8000000000000000000000000000000000000000000000000000000000000000"),
+		fromHex("000000000000000000000000"),
+		nil,
+		fromHex("789cc357f0b6cda5395f08c8538f1226d08eb3e16ebd6b6db6cc9ca77d81d900bb9d21f6ef0b720550d161f1a80fab0468e48c086daad356edce3a3f988d8e"),
+		12,
+	},
+	{
+		fromHex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+		fromHex("0001020304050607"),
+		nil,
+		fromHex("6898eb04f3d151985e28e882f35daf28d2a1689f79081ffb08cdc48edbbd3dcd683c764f3dd7302293928ca3d4ef4194e6e22f41a72204a14b89115d06ca29fb0b9f6e" +
+			"ba3da6793a928afe76cdf62a5d5b0898bb9bb2348612189fdb825e5aa7559c9ec79ff80d05079fad81e9bc2521b2ebcb179cebeade91f20ff3e13192d60de2ee983ec07047e7827594773c28448d89e9b" +
+			"96bb0f8665b1a56f85abebd584a446e17d5a6fb847a1dbf341ece5124ff5f80d4a57fb7edf65a2907939b2f3c9654ccbfa2e5225edc8d799bf7ce296d6c8f9234cec0bd7b91b3d2ddc27f93ff8591ddb3" +
+			"62b54fab111a7da9d5b4187661ed0e691f7aa5959fb83112427a95bbeb"),
+		12,
+	},
+	{
+		fromHex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+		fromHex("0001020304050607"),
+		nil,
+		fromHex("40e1aaea1c843baa28b18eb728fec05dce47b0e824bf9a5d3f1bb1aad13b37fbbf0b0e146732c16380efeab70a1b6edff9acedc876b70d98b61f192290537973"),
+		8,
+	},
+	{
+		fromHex("0000000000000000000000000000000000000000000000000000000000000000"),
+		fromHex("000000000000000000000000000000000000000000000000"),
+		nil,
+		fromHex("bcd02a18bf3f01d19292de30a7a8fdaca4b65e50a6002cc72cd6d2f7c91ac3d5728f83e0aad2bfcf9abd2d2db58faedd65015dd83fc09b131e271043019e8e0f789e96" +
+			"89e5208d7fd9e1f3c5b5341f48ef18a13e418998addadd97a3693a987f8e82ecd5c1433bfed1af49750c0f1ff29c4174a05b119aa3a9e8333812e0c0fea49e1ee0134a70a9d49c24e0cbd8fc3ba27e97c" +
+			"3322ad487f778f8dc6a122fa59cbe33e7"),
+		20,
+	},
+	{
+		fromHex("8000000000000000000000000000000000000000000000000000000000000000"),
+		fromHex("000000000000000000000000000000000000000000000000"),
+		nil,
+		fromHex("ccfe8a9e93431bd582f07b3eb0f4a7afc22ef39337ddd84f0d3545b318a315a32b3abb96de0fc6acde48b248fe8a80e6fa72bfcdf9d8d2656b991676476f052d937308" +
+			"0e30d8c0e217126a3c64402e1d9404ba9d6b8ce4ad5ac9693f3660638c26ea2cd1b4a8d3348c1e179ead353ee72fee558e9994c51a27195e287d00ec2f8cfef8866d1f98714f40cbe4e18cebabf3cd1fd" +
+			"3bb65506e5dce1ad09f438bffe2c96d7f2f0827c8c3f2ca59dbaa393785c6b8da7c69c8a4a63ffd113dcc93de8f52dbcfaed5e4cbcc1dc310b1352868fab7b14d930a9f7a7d47bed0eaf5b151f6dac8bd" +
+			"45510698bdc205d70b944ea5450888dd3ec753da9708bf06c0714822dda74f285c361abd0cd1071324c253dc421905edca36e8808bffef091e7dbdecebdad98cf70b7cede72e9c3c4108e5b32ffae0f42" +
+			"151a8196939d8e3b8384be1"),
+		20,
+	},
+	{
+		fromHex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"),
+		fromHex("000102030405060708090a0b0c0d0e0f1011121314151617"),
+		nil,
+		fromHex("e53a61cef151e81401067de33adfc02e90ab205361b49b539fda7f0e63b1bc7d68fbee56c9c20c39960e595f3ea76c979804d08cfa728e66cb5f766b840ec61f9ec20f" +
+			"7f90d28dae334426cecb52a8e84b4728a5fdd61deb7f1a3fb63dadf5595e06b6e441670964d595ae59cf21536271bae2594774fb19079b933d8fe744f4"),
 		20,
 	},
 }
