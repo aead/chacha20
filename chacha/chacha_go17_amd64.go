@@ -1,32 +1,42 @@
-// Copyright (c) 2016 Andreas Auernhammer. All rights reserved.
+// Copyright (c) 2017 Andreas Auernhammer. All rights reserved.
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
-// +build amd64,!gccgo,!appengine,!nacl
+// +build go1.7,amd64,!gccgo,!appengine,!nacl
 
 package chacha
 
 func init() {
 	useSSE2 = true
 	useSSSE3 = supportsSSSE3()
-	useAVX2 = false
+	useAVX2 = supportsAVX2()
 }
 
+// This function is implemented in chacha_amd64.s
 //go:noescape
 func initialize(state *[64]byte, key *[32]byte, nonce *[16]byte)
 
+// This function is implemented in chacha_amd64.s
 //go:noescape
 func supportsSSSE3() bool
 
+// This function is implemented in chacha_go17_amd64.s
+//go:noescape
+func supportsAVX2() bool
+
+// This function is implemented in chacha_amd64.s
 //go:noescape
 func hChaCha20SSE2(out *[32]byte, nonce *[16]byte, key *[32]byte)
 
+// This function is implemented in chacha_amd64.s
 //go:noescape
 func hChaCha20SSSE3(out *[32]byte, nonce *[16]byte, key *[32]byte)
 
+// This function is implemented in chacha_amd64.s
 //go:noescape
 func xorKeyStreamSSE2(dst, src []byte, block, state *[64]byte, rounds int) int
 
+// This function is implemented in chacha_amd64.s
 //go:noescape
 func xorKeyStreamSSSE3(dst, src []byte, block, state *[64]byte, rounds int) int
 
