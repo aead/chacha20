@@ -52,7 +52,11 @@ func setup(state *[64]byte, nonce []byte, key *[32]byte) {
 	}
 }
 
-// XORKeyStream crypts bytes from src to dst using the given key, nonce and counter.
+// XORKeyStream crypts bytes from src to dst using the given nonce and key.
+// The length of the nonce determinds the version of ChaCha20:
+// - NonceSize:  ChaCha20/r with a 64 bit nonce and a 2^64 * 64 byte period.
+// - INonceSize: ChaCha20/r as defined in RFC 7539 and a 2^32 * 64 byte period.
+// - XNonceSize: XChaCha20/r with a 192 bit nonce and a 2^64 * 64 byte period.
 // The rounds argument specifies the number of rounds performed for keystream
 // generation - valid values are 8, 12 or 20. The src and dst may be the same slice
 // but otherwise should not overlap. If len(dst) < len(src) this function panics.
@@ -72,7 +76,7 @@ func XORKeyStream(dst, src, nonce []byte, key *[32]byte, rounds int) {
 	xorKeyStream(dst, src, &block, &state, rounds)
 }
 
-// Cipher implements ChaCha/X for a given number of rounds X.
+// Cipher implements ChaCha20/r (XChaCha20/r) for a given number of rounds r.
 type Cipher struct {
 	state, block [64]byte
 	off          int
@@ -80,8 +84,12 @@ type Cipher struct {
 	noncesize    int
 }
 
-// NewCipher returns a new *chacha.Cipher implementing the ChaCha/X (X = 8, 12 or 20)
-// stream cipher. The nonce must be unique for one key for all time.
+// NewCipher returns a new *chacha.Cipher implementing the ChaCha20/r or XChaCha20/r
+// (r = 8, 12 or 20) stream cipher. The nonce must be unique for one key for all time.
+// The length of the nonce determinds the version of ChaCha20:
+// - NonceSize:  ChaCha20/r with a 64 bit nonce and a 2^64 * 64 byte period.
+// - INonceSize: ChaCha20/r as defined in RFC 7539 and a 2^32 * 64 byte period.
+// - XNonceSize: XChaCha20/r with a 192 bit nonce and a 2^64 * 64 byte period.
 func NewCipher(nonce []byte, key *[32]byte, rounds int) *Cipher {
 	if rounds != 20 && rounds != 12 && rounds != 8 {
 		panic("chacha20/chacha: rounds must be a 8, 12, or 20")
@@ -131,6 +139,8 @@ func (c *Cipher) XORKeyStream(dst, src []byte) {
 	c.off += xorKeyStream(dst, src, &(c.block), &(c.state), c.rounds)
 }
 
+// SetCounter skips ctr * 64 byte blocks. SetCounter(0) resets the cipher.
+// This function always skips the unused keystream of the current 64 byte block.
 func (c *Cipher) SetCounter(ctr uint64) {
 	if c.noncesize == INonceSize {
 		binary.LittleEndian.PutUint32(c.state[48:], uint32(ctr))
