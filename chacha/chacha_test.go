@@ -99,7 +99,10 @@ func testVectors(t *testing.T) {
 			t.Errorf("Test %d: ciphertext mismatch:\n \t got:  %s\n \t want: %s", i, toHex(dst), toHex(v.ciphertext))
 		}
 
-		c := NewCipher(v.nonce, &key, v.rounds)
+		c, err := NewCipher(v.nonce, &key, v.rounds)
+		if err != nil {
+			t.Fatal(err)
+		}
 		c.XORKeyStream(dst[:1], v.plaintext[:1])
 		c.XORKeyStream(dst[1:], v.plaintext[1:])
 		if !bytes.Equal(dst, v.ciphertext) {

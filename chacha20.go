@@ -33,16 +33,18 @@ const XNonceSize = chacha.XNonceSize
 // - XNonceSize: XChaCha20 with a 192 bit nonce and a 2^64 * 64 byte period.
 // Src and dst may be the same slice but otherwise should not overlap.
 // If len(dst) < len(src) this function panics.
+// If the nonce is neither 64, 96 nor 192 bits long, this function panics.
 func XORKeyStream(dst, src, nonce []byte, key *[32]byte) {
 	chacha.XORKeyStream(dst, src, nonce, key, 20)
 }
 
 // NewCipher returns a new cipher.Stream implementing a ChaCha20 version.
+// The nonce must be unique for one key for all time.
 // The length of the nonce determinds the version of ChaCha20:
 // - NonceSize:  ChaCha20 with a 64 bit nonce and a 2^64 * 64 byte period.
 // - INonceSize: ChaCha20 as defined in RFC 7539 and a 2^32 * 64 byte period.
 // - XNonceSize: XChaCha20 with a 192 bit nonce and a 2^64 * 64 byte period.
-// The nonce must be unique for one key for all time.
-func NewCipher(nonce []byte, key *[32]byte) cipher.Stream {
+// If the nonce is neither 64, 96 nor 192 bits long, a non-nil error is returned.
+func NewCipher(nonce []byte, key *[32]byte) (cipher.Stream, error) {
 	return chacha.NewCipher(nonce, key, 20)
 }
