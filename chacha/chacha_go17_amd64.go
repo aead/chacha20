@@ -20,7 +20,7 @@ func initialize(state *[64]byte, key *[32]byte, nonce *[16]byte)
 //go:noescape
 func supportsSSSE3() bool
 
-// This function is implemented in chacha_go17_amd64.s
+// This function is implemented in chachaAVX2_amd64.s
 //go:noescape
 func supportsAVX2() bool
 
@@ -32,6 +32,10 @@ func hChaCha20SSE2(out *[32]byte, nonce *[16]byte, key *[32]byte)
 //go:noescape
 func hChaCha20SSSE3(out *[32]byte, nonce *[16]byte, key *[32]byte)
 
+// This function is implemented in chachaAVX2_amd64.s
+//go:noescape
+func hChaCha20AVX(out *[32]byte, nonce *[16]byte, key *[32]byte)
+
 // This function is implemented in chacha_amd64.s
 //go:noescape
 func xorKeyStreamSSE2(dst, src []byte, block, state *[64]byte, rounds int) int
@@ -40,10 +44,16 @@ func xorKeyStreamSSE2(dst, src []byte, block, state *[64]byte, rounds int) int
 //go:noescape
 func xorKeyStreamSSSE3(dst, src []byte, block, state *[64]byte, rounds int) int
 
+// This function is implemented in chachaAVX2_amd64.s
+//go:noescape
+func xorKeyStreamAVX2(dst, src []byte, block, state *[64]byte, rounds int) int
+
 func hChaCha20(out *[32]byte, nonce *[16]byte, key *[32]byte) {
-	if useSSSE3 {
+	if useAVX2 {
+		hChaCha20AVX(out, nonce, key)
+	} else if useSSSE3 {
 		hChaCha20SSSE3(out, nonce, key)
-	} else if useSSE2 { // on amd64 this is  always true - this is used to test generic on amd64
+	} else if useSSE2 { // on amd64 this is  always true - neccessary for testing generic on amd64
 		hChaCha20SSE2(out, nonce, key)
 	} else {
 		hChaCha20Generic(out, nonce, key)
@@ -51,9 +61,11 @@ func hChaCha20(out *[32]byte, nonce *[16]byte, key *[32]byte) {
 }
 
 func xorKeyStream(dst, src []byte, block, state *[64]byte, rounds int) int {
-	if useSSSE3 {
+	if useAVX2 {
+		return xorKeyStreamAVX2(dst, src, block, state, rounds)
+	} else if useSSSE3 {
 		return xorKeyStreamSSSE3(dst, src, block, state, rounds)
-	} else if useSSE2 { // on amd64 this is  always true - this is used to test generic on amd64
+	} else if useSSE2 { // on amd64 this is  always true - neccessary for testing generic on amd64
 		return xorKeyStreamSSE2(dst, src, block, state, rounds)
 	}
 	return xorKeyStreamGeneric(dst, src, block, state, rounds)
