@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"encoding/hex"
 	"testing"
+
+	"github.com/aead/chacha20/chacha"
 )
 
 func toHex(bits []byte) string {
@@ -73,14 +75,16 @@ func benchmarkXORKeyStream(b *testing.B, size int, nonceSize int) {
 	}
 }
 
-func BenchmarkChaCha20_64(b *testing.B)              { benchmarkCipher(b, 64, NonceSize) }
-func BenchmarkChaCha20_1K(b *testing.B)              { benchmarkCipher(b, 1024, NonceSize) }
-func BenchmarkXChaCha20_64(b *testing.B)             { benchmarkXORKeyStream(b, 64, XNonceSize) }
-func BenchmarkXChaCha20_1K(b *testing.B)             { benchmarkXORKeyStream(b, 1024, XNonceSize) }
-func BenchmarkXORKeyStream64(b *testing.B)           { benchmarkXORKeyStream(b, 64, NonceSize) }
-func BenchmarkXORKeyStream1K(b *testing.B)           { benchmarkXORKeyStream(b, 1024, NonceSize) }
-func BenchmarkXChaCha20_XORKeyStream64(b *testing.B) { benchmarkXORKeyStream(b, 64, XNonceSize) }
-func BenchmarkXChaCha20_XORKeyStream1K(b *testing.B) { benchmarkXORKeyStream(b, 1024, XNonceSize) }
+func BenchmarkChaCha20_64(b *testing.B)              { benchmarkCipher(b, 64, chacha.NonceSize) }
+func BenchmarkChaCha20_1K(b *testing.B)              { benchmarkCipher(b, 1024, chacha.NonceSize) }
+func BenchmarkXChaCha20_64(b *testing.B)             { benchmarkXORKeyStream(b, 64, chacha.XNonceSize) }
+func BenchmarkXChaCha20_1K(b *testing.B)             { benchmarkXORKeyStream(b, 1024, chacha.XNonceSize) }
+func BenchmarkXORKeyStream64(b *testing.B)           { benchmarkXORKeyStream(b, 64, chacha.NonceSize) }
+func BenchmarkXORKeyStream1K(b *testing.B)           { benchmarkXORKeyStream(b, 1024, chacha.NonceSize) }
+func BenchmarkXChaCha20_XORKeyStream64(b *testing.B) { benchmarkXORKeyStream(b, 64, chacha.XNonceSize) }
+func BenchmarkXChaCha20_XORKeyStream1K(b *testing.B) {
+	benchmarkXORKeyStream(b, 1024, chacha.XNonceSize)
+}
 
 var vectors = []struct {
 	key, nonce, plaintext, ciphertext []byte
