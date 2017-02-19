@@ -17,20 +17,11 @@ import (
 	"github.com/aead/chacha20/chacha"
 )
 
-// NonceSize is the size of the ChaCha20 nonce in bytes.
-const NonceSize = chacha.NonceSize
-
-// INonceSize is the size of the IETF-ChaCha20 nonce in bytes.
-const INonceSize = chacha.INonceSize
-
-// XNonceSize is the size of the XChaCha20 nonce in bytes.
-const XNonceSize = chacha.XNonceSize
-
 // XORKeyStream crypts bytes from src to dst using the given nonce and key.
 // The length of the nonce determinds the version of ChaCha20:
-// - NonceSize:  ChaCha20 with a 64 bit nonce and a 2^64 * 64 byte period.
-// - INonceSize: ChaCha20 as defined in RFC 7539 and a 2^32 * 64 byte period.
-// - XNonceSize: XChaCha20 with a 192 bit nonce and a 2^64 * 64 byte period.
+// - 8 bytes:  ChaCha20 with a 64 bit nonce and a 2^64 * 64 byte period.
+// - 12 bytes: ChaCha20 as defined in RFC 7539 and a 2^32 * 64 byte period.
+// - 24 bytes: XChaCha20 with a 192 bit nonce and a 2^64 * 64 byte period.
 // Src and dst may be the same slice but otherwise should not overlap.
 // If len(dst) < len(src) this function panics.
 // If the nonce is neither 64, 96 nor 192 bits long, this function panics.
@@ -41,9 +32,9 @@ func XORKeyStream(dst, src, nonce []byte, key *[32]byte) {
 // NewCipher returns a new cipher.Stream implementing a ChaCha20 version.
 // The nonce must be unique for one key for all time.
 // The length of the nonce determinds the version of ChaCha20:
-// - NonceSize:  ChaCha20 with a 64 bit nonce and a 2^64 * 64 byte period.
-// - INonceSize: ChaCha20 as defined in RFC 7539 and a 2^32 * 64 byte period.
-// - XNonceSize: XChaCha20 with a 192 bit nonce and a 2^64 * 64 byte period.
+// - 8 bytes:  ChaCha20 with a 64 bit nonce and a 2^64 * 64 byte period.
+// - 12 bytes: ChaCha20 as defined in RFC 7539 and a 2^32 * 64 byte period.
+// - 24 bytes: XChaCha20 with a 192 bit nonce and a 2^64 * 64 byte period.
 // If the nonce is neither 64, 96 nor 192 bits long, a non-nil error is returned.
 func NewCipher(nonce []byte, key *[32]byte) (cipher.Stream, error) {
 	return chacha.NewCipher(nonce, key, 20)
