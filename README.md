@@ -2,8 +2,8 @@
 
 ## The ChaCha20 stream cipher
 
-ChaCha is a stream cipher family created by Daniel J. Bernstein. The most common ChaCha cipher is ChaCha20 (20 rounds). 
-ChaCha20 is standardized in [RFC 7539](https://tools.ietf.org/html/rfc7539 "RFC 7539").
+ChaCha is a stream cipher family created by Daniel J. Bernstein.  
+The most common ChaCha cipher is ChaCha20 (20 rounds). ChaCha20 is standardized in [RFC 7539](https://tools.ietf.org/html/rfc7539 "RFC 7539").
 
 This package provides implementations of three ChaCha versions:
 - ChaCha20 with a 64 bit nonce (can en/decrypt up to 2^64 * 64 bytes for one key-nonce combination)  
@@ -18,7 +18,7 @@ But it's recommended to use ChaCha20 (with 20 rounds) - it will be fast enough f
 Install in your GOPATH: `go get -u github.com/aead/chacha20`
 
 ### Requirements
-All go versions >= 1.5.3 are supported.
+All go versions >= 1.5.3 are supported.  
 Please notice, that the amd64 AVX2 asm implementation requires go1.7 or newer.
 
 ### Performance
