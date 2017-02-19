@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Andreas Auernhammer. All rights reserved.
+// Copyright (c) 2016 Andreas Auernhammer. All rights reserved.
 // Use of this source code is governed by a license that can be
 // found in the LICENSE file.
 
@@ -494,6 +494,7 @@ xor_loop:
 
 done:
     VMOVDQU X3, 48(AX)
+    VZEROUPPER
     MOVQ R8, SP
     MOVQ CX, ret+72(FP)
     RET
@@ -522,10 +523,13 @@ chacha_loop:
 
     VMOVDQU X0, 0(DI)
     VMOVDQU X3, 16(DI)
+    VZEROUPPER
     RET
 
 // func supportsAVX2() bool
 TEXT ·supportsAVX2(SB), 4, $0-1
-	MOVQ runtime·support_avx2(SB), AX
-	MOVB AX, ret+0(FP)
-	RET
+	MOVQ runtime·support_avx(SB), AX
+    MOVQ runtime·support_avx2(SB), BX
+    ORQ AX, BX
+	MOVB BX, ret+0(FP)
+    RET

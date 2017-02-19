@@ -70,6 +70,27 @@ func TestVectors(t *testing.T) {
 	testVectors(t)
 }
 
+func TestIncremental(t *testing.T) {
+	defer func(sse2, ssse3, avx2 bool) {
+		useSSE2, useSSSE3, useAVX2 = sse2, ssse3, avx2
+	}(useSSE2, useSSSE3, useAVX2)
+
+	if useAVX2 {
+		t.Log("AVX2 version")
+		testIncremental(t, 5, 2049)
+		useAVX2 = false
+	}
+	if useSSSE3 {
+		t.Log("SSSE3 version")
+		testIncremental(t, 5, 2049)
+		useSSSE3 = false
+	}
+	if useSSE2 {
+		t.Log("SSE2 version")
+		testIncremental(t, 5, 2049)
+	}
+}
+
 func testHChaCha20(t *testing.T) {
 	for i, v := range hChaCha20Vectors {
 		var key [32]byte
@@ -108,6 +129,56 @@ func testVectors(t *testing.T) {
 		if !bytes.Equal(dst, v.ciphertext) {
 			t.Errorf("Test %d: ciphertext mismatch:\n \t got:  %s\n \t want: %s", i, toHex(dst), toHex(v.ciphertext))
 		}
+	}
+}
+
+func testIncremental(t *testing.T, iter int, size int) {
+	sse2, ssse3, avx2 := useSSE2, useSSSE3, useAVX2
+	msg, ref, stream := make([]byte, size), make([]byte, size), make([]byte, size)
+
+	for i := 0; i < iter; i++ {
+		var key [32]byte
+		var nonce []byte
+		switch i % 3 {
+		case 0:
+			nonce = make([]byte, 8)
+		case 1:
+			nonce = make([]byte, 12)
+		case 2:
+			nonce = make([]byte, 24)
+		}
+
+		for j := range key {
+			key[j] = byte(len(nonce) + i)
+		}
+		for j := range nonce {
+			nonce[j] = byte(i)
+		}
+
+		for j := 0; j <= len(msg); j++ {
+			useSSE2, useSSSE3, useAVX2 = false, false, false
+			XORKeyStream(ref[:j], msg[:j], nonce, &key, 20)
+
+			useSSE2, useSSSE3, useAVX2 = sse2, ssse3, avx2
+			XORKeyStream(stream[:j], msg[:j], nonce, &key, 20)
+
+			if !bytes.Equal(ref[:j], stream[:j]) {
+				t.Fatalf("Iteration %d failed:\n Message length: %d\n\n got:  %s\nwant: %s", i, j, toHex(stream[:j]), toHex(ref[:j]))
+			}
+
+			useSSE2, useSSSE3, useAVX2 = false, false, false
+			c, _ := NewCipher(nonce, &key, 20)
+			c.XORKeyStream(stream[:j], msg[:j])
+
+			useSSE2, useSSSE3, useAVX2 = sse2, ssse3, avx2
+			c, _ = NewCipher(nonce, &key, 20)
+			c.XORKeyStream(stream[:j], msg[:j])
+
+			if !bytes.Equal(ref[:j], stream[:j]) {
+				t.Fatalf("Iteration %d failed:\n Message length: %d\n\n got:  %s\nwant: %s", i, j, toHex(stream[:j]), toHex(ref[:j]))
+			}
+		}
+		copy(msg, stream)
 	}
 }
 
