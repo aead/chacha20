@@ -528,8 +528,8 @@ chacha_loop:
 
 // func supportsAVX2() bool
 TEXT ·supportsAVX2(SB), 4, $0-1
-	//MOVQ runtime·support_avx(SB), AX
+	MOVQ runtime·support_avx(SB), AX
     MOVQ runtime·support_avx2(SB), BX
-    //ORQ AX, BX
-	MOVB BX, ret+0(FP)
+	ANDQ AX, BX
+    MOVB BX, ret+0(FP)
     RET
