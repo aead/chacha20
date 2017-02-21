@@ -31,15 +31,13 @@ func TestVectors(t *testing.T) {
 		}
 
 		dst := make([]byte, len(v.ciphertext))
-		var key [32]byte
-		copy(key[:], v.key)
 
-		XORKeyStream(dst, v.plaintext, v.nonce, &key)
+		XORKeyStream(dst, v.plaintext, v.nonce, v.key)
 		if !bytes.Equal(dst, v.ciphertext) {
 			t.Errorf("Test %d: ciphertext mismatch:\n \t got:  %s\n \t want: %s", i, toHex(dst), toHex(v.ciphertext))
 		}
 
-		c, err := NewCipher(v.nonce, &key)
+		c, err := NewCipher(v.nonce, v.key)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -54,7 +52,7 @@ func TestVectors(t *testing.T) {
 func benchmarkCipher(b *testing.B, size int, nonceSize int) {
 	var key [32]byte
 	nonce := make([]byte, nonceSize)
-	c, _ := NewCipher(nonce, &key)
+	c, _ := NewCipher(nonce, key[:])
 	buf := make([]byte, size)
 
 	b.SetBytes(int64(len(buf)))
@@ -71,7 +69,7 @@ func benchmarkXORKeyStream(b *testing.B, size int, nonceSize int) {
 	b.SetBytes(int64(len(buf)))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		XORKeyStream(buf, buf, nonce[:], &key)
+		XORKeyStream(buf, buf, nonce[:], key[:])
 	}
 }
 

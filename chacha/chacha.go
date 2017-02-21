@@ -11,14 +11,19 @@ import (
 	"errors"
 )
 
-// NonceSize is the size of the ChaCha20 nonce in bytes.
-const NonceSize = 8
+const (
+	// NonceSize is the size of the ChaCha20 nonce in bytes.
+	NonceSize = 8
 
-// INonceSize is the size of the IETF-ChaCha20 nonce in bytes.
-const INonceSize = 12
+	// INonceSize is the size of the IETF-ChaCha20 nonce in bytes.
+	INonceSize = 12
 
-// XNonceSize is the size of the XChaCha20 nonce in bytes.
-const XNonceSize = 24
+	// XNonceSize is the size of the XChaCha20 nonce in bytes.
+	XNonceSize = 24
+
+	// KeySize is the size of the key used by this cipher, in bytes.
+	KeySize = 32
+)
 
 var (
 	useSSE2  bool
@@ -26,9 +31,16 @@ var (
 	useAVX2  bool
 )
 
-var errInvalidNonce = errors.New("invalid nonce: nonce must be 8, 12 or 24 bytes long")
+var (
+	errKeySize      = errors.New("chacha20/chacha: bad key length")
+	errInvalidNonce = errors.New("chacha20/chacha: bad nonce length")
+)
 
-func setup(state *[64]byte, nonce []byte, key *[32]byte) (err error) {
+func setup(state *[64]byte, nonce, key []byte) (err error) {
+	if len(key) != KeySize {
+		err = errKeySize
+		return
+	}
 	var Nonce [16]byte
 	switch len(nonce) {
 	case NonceSize:
@@ -42,9 +54,10 @@ func setup(state *[64]byte, nonce []byte, key *[32]byte) (err error) {
 		var hNonce [16]byte
 
 		copy(hNonce[:], nonce[:16])
-		hChaCha20(&tmpKey, &hNonce, key)
+		copy(tmpKey[:], key)
+		hChaCha20(&tmpKey, &hNonce, &tmpKey)
 		copy(Nonce[8:], nonce[16:])
-		initialize(state, &tmpKey, &Nonce)
+		initialize(state, tmpKey[:], &Nonce)
 
 		// BUG(aead): A "good" compiler will remove this (optimizations)
 		//			  But using the provided key instead of tmpKey,
@@ -67,9 +80,9 @@ func setup(state *[64]byte, nonce []byte, key *[32]byte) (err error) {
 // generation - valid values are 8, 12 or 20. The src and dst may be the same slice
 // but otherwise should not overlap. If len(dst) < len(src) this function panics.
 // If the nonce is neither 64, 96 nor 192 bits long, this function panics.
-func XORKeyStream(dst, src, nonce []byte, key *[32]byte, rounds int) {
+func XORKeyStream(dst, src, nonce, key []byte, rounds int) {
 	if rounds != 20 && rounds != 12 && rounds != 8 {
-		panic("chacha20/chacha: rounds must be a 8, 12, or 20")
+		panic("chacha20/chacha: bad number of rounds")
 	}
 	if len(dst) < len(src) {
 		panic("chacha20/chacha: dst buffer is to small")
@@ -79,8 +92,8 @@ func XORKeyStream(dst, src, nonce []byte, key *[32]byte, rounds int) {
 	}
 
 	var block, state [64]byte
-	if setup(&state, nonce, key) != nil {
-		panic("chacha20/chacha: nonce must be 8, 12 or 24 bytes long")
+	if err := setup(&state, nonce, key); err != nil {
+		panic(err)
 	}
 	xorKeyStream(dst, src, &block, &state, rounds)
 }
@@ -100,9 +113,9 @@ type Cipher struct {
 // - INonceSize: ChaCha20/r as defined in RFC 7539 and a 2^32 * 64 byte period.
 // - XNonceSize: XChaCha20/r with a 192 bit nonce and a 2^64 * 64 byte period.
 // If the nonce is neither 64, 96 nor 192 bits long, a non-nil error is returned.
-func NewCipher(nonce []byte, key *[32]byte, rounds int) (*Cipher, error) {
+func NewCipher(nonce, key []byte, rounds int) (*Cipher, error) {
 	if rounds != 20 && rounds != 12 && rounds != 8 {
-		panic("chacha20/chacha: rounds must be a 8, 12, or 20")
+		panic("chacha20/chacha: bad number of rounds")
 	}
 
 	c := new(Cipher)

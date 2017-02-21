@@ -112,15 +112,13 @@ func testVectors(t *testing.T) {
 		}
 
 		dst := make([]byte, len(v.ciphertext))
-		var key [32]byte
-		copy(key[:], v.key)
 
-		XORKeyStream(dst, v.plaintext, v.nonce, &key, v.rounds)
+		XORKeyStream(dst, v.plaintext, v.nonce, v.key, v.rounds)
 		if !bytes.Equal(dst, v.ciphertext) {
 			t.Errorf("Test %d: ciphertext mismatch:\n \t got:  %s\n \t want: %s", i, toHex(dst), toHex(v.ciphertext))
 		}
 
-		c, err := NewCipher(v.nonce, &key, v.rounds)
+		c, err := NewCipher(v.nonce, v.key, v.rounds)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -157,21 +155,21 @@ func testIncremental(t *testing.T, iter int, size int) {
 
 		for j := 0; j <= len(msg); j++ {
 			useSSE2, useSSSE3, useAVX2 = false, false, false
-			XORKeyStream(ref[:j], msg[:j], nonce, &key, 20)
+			XORKeyStream(ref[:j], msg[:j], nonce, key[:], 20)
 
 			useSSE2, useSSSE3, useAVX2 = sse2, ssse3, avx2
-			XORKeyStream(stream[:j], msg[:j], nonce, &key, 20)
+			XORKeyStream(stream[:j], msg[:j], nonce, key[:], 20)
 
 			if !bytes.Equal(ref[:j], stream[:j]) {
 				t.Fatalf("Iteration %d failed:\n Message length: %d\n\n got:  %s\nwant: %s", i, j, toHex(stream[:j]), toHex(ref[:j]))
 			}
 
 			useSSE2, useSSSE3, useAVX2 = false, false, false
-			c, _ := NewCipher(nonce, &key, 20)
+			c, _ := NewCipher(nonce, key[:], 20)
 			c.XORKeyStream(stream[:j], msg[:j])
 
 			useSSE2, useSSSE3, useAVX2 = sse2, ssse3, avx2
-			c, _ = NewCipher(nonce, &key, 20)
+			c, _ = NewCipher(nonce, key[:], 20)
 			c.XORKeyStream(stream[:j], msg[:j])
 
 			if !bytes.Equal(ref[:j], stream[:j]) {

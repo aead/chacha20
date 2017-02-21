@@ -14,7 +14,7 @@ func init() {
 
 // This function is implemented in chacha_amd64.s
 //go:noescape
-func initialize(state *[64]byte, key *[32]byte, nonce *[16]byte)
+func initialize(state *[64]byte, key []byte, nonce *[16]byte)
 
 // This function is implemented in chacha_amd64.s
 //go:noescape

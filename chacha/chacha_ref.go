@@ -8,7 +8,7 @@ package chacha
 
 import "encoding/binary"
 
-func initialize(state *[64]byte, key *[32]byte, nonce *[16]byte) {
+func initialize(state *[64]byte, key []byte, nonce *[16]byte) {
 	binary.LittleEndian.PutUint32(state[0:], sigma[0])
 	binary.LittleEndian.PutUint32(state[4:], sigma[1])
 	binary.LittleEndian.PutUint32(state[8:], sigma[2])

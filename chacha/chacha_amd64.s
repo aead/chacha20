@@ -706,11 +706,11 @@ TEXT ·supportsSSSE3(SB), NOSPLIT, $0-1
 	MOVB CX, ret+0(FP)
 	RET
 
-// func initialize(state *[64]byte, key *[32]byte, nonce *[16]byte)
-TEXT ·initialize(SB), 4, $0-24
+// func initialize(state *[64]byte, key []byte, nonce *[16]byte)
+TEXT ·initialize(SB), 4, $0-40
     MOVQ state+0(FP), DI
     MOVQ key+8(FP), AX
-    MOVQ nonce+16(FP), BX
+    MOVQ nonce+32(FP), BX
 
     MOVOU ·sigma<>(SB), X0
     MOVOU 0(AX), X1
