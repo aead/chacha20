@@ -21,7 +21,7 @@ const (
 	// XNonceSize is the size of the XChaCha20 nonce in bytes.
 	XNonceSize = 24
 
-	// KeySize is the size of the key used by this cipher, in bytes.
+	// KeySize is the size of the key in bytes.
 	KeySize = 32
 )
 
