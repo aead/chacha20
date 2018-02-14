@@ -9,7 +9,7 @@ package chacha
 func init() {
 	useSSE2 = true
 	useSSSE3 = supportsSSSE3()
-	useAVX2 = supportsAVX2()
+	useAVX2 = supportsAVX2() && false // disable until #16 is fixed
 }
 
 // This function is implemented in chacha_amd64.s
