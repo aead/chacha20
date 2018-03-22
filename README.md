@@ -18,8 +18,8 @@ But it's recommended to use ChaCha20 (with 20 rounds) - it will be fast enough f
 Install in your GOPATH: `go get -u github.com/aead/chacha20`
 
 ### Requirements
-All go versions >= 1.5.3 are supported.  
-Please notice, that the amd64 AVX2 asm implementation requires go1.7 or newer.
+All go versions >= 1.8.7 are supported.
+The code may also work on Go 1.7 but this is not tested.
 
 ### Performance
 
