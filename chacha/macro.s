@@ -92,7 +92,7 @@
 #define CHACHA_SHUFFLE_AVX(v1, v2, v3) \
 	VPSHUFD $0x39, v1, v1; \
 	VPSHUFD $0x4E, v2, v2; \
-	VPSHUFD $-109, v3, v3
+	VPSHUFD $0x93, v3, v3
 
 // XOR_SSE extracts 4x16 byte vectors from src at 
 // off, xors all vectors with the corresponding XMM 

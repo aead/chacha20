@@ -9,7 +9,8 @@ package chacha
 func init() {
 	useSSE2 = true
 	useSSSE3 = supportsSSSE3()
-	useAVX2 = supportsAVX2() // && false // disable until #16 is fixed
+	useAVX = supportsAVX()
+	useAVX2 = supportsAVX2() && false // disable until #16 is fixed
 }
 
 // This function is implemented in chacha_amd64.s
@@ -20,7 +21,11 @@ func initialize(state *[64]byte, key []byte, nonce *[16]byte)
 //go:noescape
 func supportsSSSE3() bool
 
-// This function is implemented in chachaAVX2_amd64.s
+// This function is implemented in chacha_amd64.s
+//go:noescape
+func supportsAVX() bool
+
+// This function is implemented in chacha_amd64.s
 //go:noescape
 func supportsAVX2() bool
 
@@ -44,12 +49,16 @@ func xorKeyStreamSSE2(dst, src []byte, block, state *[64]byte, rounds int) int
 //go:noescape
 func xorKeyStreamSSSE3(dst, src []byte, block, state *[64]byte, rounds int) int
 
+// This function is implemented in chacha_amd64.s
+//go:noescape
+func xorKeyStreamAVX(dst, src []byte, block, state *[64]byte, rounds int) int
+
 // This function is implemented in chachaAVX2_amd64.s
 //go:noescape
 func xorKeyStreamAVX2(dst, src []byte, block, state *[64]byte, rounds int) int
 
 func hChaCha20(out *[32]byte, nonce *[16]byte, key *[32]byte) {
-	if useAVX2 {
+	if useAVX {
 		hChaCha20AVX(out, nonce, key)
 	} else if useSSSE3 {
 		hChaCha20SSSE3(out, nonce, key)
@@ -63,6 +72,8 @@ func hChaCha20(out *[32]byte, nonce *[16]byte, key *[32]byte) {
 func xorKeyStream(dst, src []byte, block, state *[64]byte, rounds int) int {
 	if useAVX2 {
 		return xorKeyStreamAVX2(dst, src, block, state, rounds)
+	} else if useAVX {
+		return xorKeyStreamAVX(dst, src, block, state, rounds)
 	} else if useSSSE3 {
 		return xorKeyStreamSSSE3(dst, src, block, state, rounds)
 	} else if useSSE2 { // on amd64 this is  always true - necessary for testing generic on amd64

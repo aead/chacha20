@@ -404,38 +404,3 @@ done:
 	MOVQ    CX, ret+72(FP)
 	RET
 
-// func hChaCha20AVX(out *[32]byte, nonce *[16]byte, key *[32]byte)
-TEXT ·hChaCha20AVX(SB), 4, $0-24
-	MOVQ out+0(FP), DI
-	MOVQ nonce+8(FP), AX
-	MOVQ key+16(FP), BX
-
-	VMOVDQU ·sigma<>(SB), X0
-	VMOVDQU 0(BX), X1
-	VMOVDQU 16(BX), X2
-	VMOVDQU 0(AX), X3
-	VMOVDQU ·rol16_AVX2<>(SB), X5
-	VMOVDQU ·rol8_AVX2<>(SB), X6
-
-	MOVQ $20, CX
-
-chacha_loop:
-	CHACHA_QROUND_AVX(X0, X1, X2, X3, X4, X5, X6)
-	CHACHA_SHUFFLE_AVX(X1, X2, X3)
-	CHACHA_QROUND_AVX(X0, X1, X2, X3, X4, X5, X6)
-	CHACHA_SHUFFLE_AVX(X3, X2, X1)
-	SUBQ $2, CX
-	JNZ  chacha_loop
-
-	VMOVDQU X0, 0(DI)
-	VMOVDQU X3, 16(DI)
-	VZEROUPPER
-	RET
-
-// func supportsAVX2() bool
-TEXT ·supportsAVX2(SB), 4, $0-1
-	MOVQ runtime·support_avx(SB), AX
-	MOVQ runtime·support_avx2(SB), BX
-	ANDQ AX, BX
-	MOVB BX, ret+0(FP)
-	RET
