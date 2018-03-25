@@ -1,5 +1,5 @@
 [![Godoc Reference](https://godoc.org/github.com/aead/chacha20?status.svg)](https://godoc.org/github.com/aead/chacha20)
-[![Travis CI](https://travis-ci.org/aead/chacha20?branch=master)](https://travis-ci.org/aead/chacha20)
+[![Build Status](https://travis-ci.org/aead/chacha20.svg?branch=master)](https://travis-ci.org/aead/chacha20)
 [![Go Report Card](https://goreportcard.com/badge/aead/chacha20)](https://goreportcard.com/report/aead/chacha20)
 
 ## The ChaCha20 stream cipher
