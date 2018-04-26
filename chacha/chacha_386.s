@@ -22,7 +22,7 @@
 	INCL block;        \
 	INCL dst;          \
 	DECL len;          \
-	JA   FINALIZE_LOOP \
+	JG   FINALIZE_LOOP \
 
 // func supportsSSE2() bool
 TEXT ·supportsSSE2(SB), NOSPLIT, $0-1

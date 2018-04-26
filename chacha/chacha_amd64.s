@@ -22,7 +22,7 @@
 	INCQ block;        \
 	INCQ dst;          \
 	DECQ len;          \
-	JA   FINALIZE_LOOP \
+	JG   FINALIZE_LOOP \
 
 // func supportsSSSE3() bool
 TEXT ·supportsSSSE3(SB), NOSPLIT, $0-1
@@ -295,7 +295,7 @@ CHACHA_LOOP_256:
 	CMPQ Len, $128              // If 64 < Len <= 128 -> gen. only 128 byte keystream.
 	JLE  GENERATE_KEYSTREAM_128
 	CMPQ Len, $192              // If Len > 192 -> repeat, otherwise Len > 128 && Len <= 192 -> gen. 192 byte keystream
-	JA   GENERATE_KEYSTREAM_256
+	JG   GENERATE_KEYSTREAM_256
 
 GENERATE_KEYSTREAM_192:
 	MOVO  X0, X12
@@ -595,7 +595,7 @@ CHACHA_LOOP_256:
 	CMPQ Len, $128              // If 64 < Len <= 128 -> gen. only 128 byte keystream.
 	JLE  GENERATE_KEYSTREAM_128
 	CMPQ Len, $192              // If Len > 192 -> repeat, otherwise Len > 128 && Len <= 192 -> gen. 192 byte keystream
-	JA   GENERATE_KEYSTREAM_256
+	JG   GENERATE_KEYSTREAM_256
 
 GENERATE_KEYSTREAM_192:
 	MOVO  X0, X12
@@ -667,7 +667,7 @@ CHACHA_LOOP_192:
 	ADDQ $64, Src
 	SUBQ $64, Len
 	JZ   DONE
-	CMPQ Len, $64               // If Len <= 64 -> gen. only 64 byte keystream.
+	CMPQ Len, $64              // If Len <= 64 -> gen. only 64 byte keystream.
 	JLE  GENERATE_KEYSTREAM_64
 
 GENERATE_KEYSTREAM_128:
@@ -906,7 +906,7 @@ CHACHA_LOOP_256:
 	CMPQ Len, $128              // If 64 < Len <= 128 -> gen. only 128 byte keystream.
 	JLE  GENERATE_KEYSTREAM_128
 	CMPQ Len, $192              // If Len > 192 -> repeat, otherwise Len > 128 && Len <= 192 -> gen. 192 byte keystream
-	JA   GENERATE_KEYSTREAM_256
+	JG   GENERATE_KEYSTREAM_256
 
 GENERATE_KEYSTREAM_192:
 	VMOVDQA X0, X12
@@ -978,7 +978,7 @@ CHACHA_LOOP_192:
 	ADDQ $64, Src
 	SUBQ $64, Len
 	JZ   DONE
-	CMPQ Len, $64               // If Len <= 64 -> gen. only 64 byte keystream.
+	CMPQ Len, $64              // If Len <= 64 -> gen. only 64 byte keystream.
 	JLE  GENERATE_KEYSTREAM_64
 
 GENERATE_KEYSTREAM_128:
