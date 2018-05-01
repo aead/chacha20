@@ -6,11 +6,15 @@
 
 package chacha
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+
+	"golang.org/x/sys/cpu"
+)
 
 func init() {
-	useSSE2 = supportsSSE2()
-	useSSSE3 = supportsSSSE3()
+	useSSE2 = cpu.X86.HasSSE2
+	useSSSE3 = cpu.X86.HasSSSE3
 	useAVX = false
 	useAVX2 = false
 }
@@ -26,14 +30,6 @@ func initialize(state *[64]byte, key []byte, nonce *[16]byte) {
 
 // This function is implemented in chacha_386.s
 //go:noescape
-func supportsSSE2() bool
-
-// This function is implemented in chacha_386.s
-//go:noescape
-func supportsSSSE3() bool
-
-// This function is implemented in chacha_386.s
-//go:noescape
 func hChaCha20SSE2(out *[32]byte, nonce *[16]byte, key *[32]byte)
 
 // This function is implemented in chacha_386.s
@@ -45,11 +41,12 @@ func hChaCha20SSSE3(out *[32]byte, nonce *[16]byte, key *[32]byte)
 func xorKeyStreamSSE2(dst, src []byte, block, state *[64]byte, rounds int) int
 
 func hChaCha20(out *[32]byte, nonce *[16]byte, key *[32]byte) {
-	if useSSSE3 {
+	switch {
+	case useSSSE3:
 		hChaCha20SSSE3(out, nonce, key)
-	} else if useSSE2 {
+	case useSSE2:
 		hChaCha20SSE2(out, nonce, key)
-	} else {
+	default:
 		hChaCha20Generic(out, nonce, key)
 	}
 }
@@ -57,6 +54,7 @@ func hChaCha20(out *[32]byte, nonce *[16]byte, key *[32]byte) {
 func xorKeyStream(dst, src []byte, block, state *[64]byte, rounds int) int {
 	if useSSE2 {
 		return xorKeyStreamSSE2(dst, src, block, state, rounds)
+	default:
+		return xorKeyStreamGeneric(dst, src, block, state, rounds)
 	}
-	return xorKeyStreamGeneric(dst, src, block, state, rounds)
 }

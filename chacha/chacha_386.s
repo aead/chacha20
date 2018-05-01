@@ -24,26 +24,6 @@
 	DECL len;          \
 	JG   FINALIZE_LOOP \
 
-// func supportsSSE2() bool
-TEXT ·supportsSSE2(SB), NOSPLIT, $0-1
-	XORL AX, AX
-	INCL AX
-	CPUID
-	SHRL $26, DX
-	ANDL $1, DX
-	MOVB DX, ret+0(FP)
-	RET
-
-// func supportsSSSE3() bool
-TEXT ·supportsSSSE3(SB), NOSPLIT, $0-1
-	XORL AX, AX
-	INCL AX
-	CPUID
-	SHRL $9, CX
-	ANDL $1, CX
-	MOVB CX, ret+0(FP)
-	RET
-
 #define Dst DI
 #define Nonce AX
 #define Key BX
