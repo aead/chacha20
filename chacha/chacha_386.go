@@ -44,10 +44,6 @@ func hChaCha20SSSE3(out *[32]byte, nonce *[16]byte, key *[32]byte)
 //go:noescape
 func xorKeyStreamSSE2(dst, src []byte, block, state *[64]byte, rounds int) int
 
-// This function is implemented in chacha_386.s
-//go:noescape
-func xorKeyStreamSSSE3(dst, src []byte, block, state *[64]byte, rounds int) int
-
 func hChaCha20(out *[32]byte, nonce *[16]byte, key *[32]byte) {
 	if useSSSE3 {
 		hChaCha20SSSE3(out, nonce, key)
@@ -59,9 +55,7 @@ func hChaCha20(out *[32]byte, nonce *[16]byte, key *[32]byte) {
 }
 
 func xorKeyStream(dst, src []byte, block, state *[64]byte, rounds int) int {
-	if useSSSE3 {
-		return xorKeyStreamSSSE3(dst, src, block, state, rounds)
-	} else if useSSE2 {
+	if useSSE2 {
 		return xorKeyStreamSSE2(dst, src, block, state, rounds)
 	}
 	return xorKeyStreamGeneric(dst, src, block, state, rounds)
