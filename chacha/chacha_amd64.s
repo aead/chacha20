@@ -152,7 +152,7 @@ chacha_loop:
 
 #define Dst DI
 #define Src SI
-#define Len CX
+#define Len R12
 #define Rounds DX
 #define Buffer BX
 #define State AX
