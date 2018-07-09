@@ -6,6 +6,7 @@ package chacha
 
 import (
 	"bytes"
+	"crypto/cipher"
 	"encoding/hex"
 	"testing"
 )
@@ -80,18 +81,38 @@ func TestVectors(t *testing.T) {
 	testVectors(t)
 }
 
+var overflowTests = []struct {
+	NonceSize     int
+	Counter       uint64
+	PlaintextSize int
+}{
+	{NonceSize: NonceSize, Counter: ^uint64(0), PlaintextSize: 65},
+	{NonceSize: NonceSize, Counter: ^uint64(1), PlaintextSize: 129},
+	{NonceSize: INonceSize, Counter: uint64(^uint32(0)), PlaintextSize: 65},
+	{NonceSize: INonceSize, Counter: uint64(^uint32(1)), PlaintextSize: 129},
+	{NonceSize: XNonceSize, Counter: ^uint64(0), PlaintextSize: 65},
+	{NonceSize: XNonceSize, Counter: ^uint64(1), PlaintextSize: 129},
+}
+
 func TestOverflow(t *testing.T) {
+	var key [32]byte
+	for i, test := range overflowTests {
+		stream, err := NewCipher(make([]byte, test.NonceSize), key[:], 20)
+		if err != nil {
+			t.Errorf("Test %d: Failed to create cipher.Stream: %v", i, err)
+			continue
+		}
+		stream.SetCounter(test.Counter)
+		testOverflow(i, make([]byte, test.PlaintextSize), stream, t)
+	}
+}
+
+func testOverflow(i int, plaintext []byte, stream cipher.Stream, t *testing.T) {
 	defer func() {
-		if recover() == nil {
-			t.Fatal("expected panic")
+		if err := recover(); err == nil {
+			t.Errorf("Test %d: expected test to panic but it succeeded", i)
 		}
 	}()
-
-	// Set the counter to uint64-max and encrypt a two-block plaintext. This
-	// should trigger the overflow detector.
-	stream, _ := NewCipher(make([]byte, NonceSize), make([]byte, KeySize), 20)
-	stream.SetCounter(^uint64(0))
-	plaintext := make([]byte, 65)
 	stream.XORKeyStream(plaintext, plaintext)
 }
 
