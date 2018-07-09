@@ -80,6 +80,21 @@ func TestVectors(t *testing.T) {
 	testVectors(t)
 }
 
+func TestOverflow(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic")
+		}
+	}()
+
+	// Set the counter to uint64-max and encrypt a two-block plaintext. This
+	// should trigger the overflow detector.
+	stream, _ := NewCipher(make([]byte, NonceSize), make([]byte, KeySize), 20)
+	stream.SetCounter(^uint64(0))
+	plaintext := make([]byte, 65)
+	stream.XORKeyStream(plaintext, plaintext)
+}
+
 func TestIncremental(t *testing.T) {
 	defer func(sse2, ssse3, avx, avx2 bool) {
 		useSSE2, useSSSE3, useAVX, useAVX2 = sse2, ssse3, avx, avx2
